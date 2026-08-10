@@ -50,6 +50,10 @@
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
         ],
+        "vercel": [
+            "@php artisan migrate --force --no-interaction",
+            "if [ \"$APP_SEED\" = \"true\" ]; then php artisan db:seed --force --no-interaction; fi"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

@@ -41,7 +41,59 @@ php artisan boost:install
 
 Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
 
-## Deploy to Koyeb (free, no credit card)
+## Deploy to Vercel (serverless, no credit card)
+
+The repo ships with a Vercel-ready setup: `vercel.json` + `api/index.php`
+(vercel-php runtime) + environment template `deploy/.env.vercel.example`.
+
+### 1. Database — Neon (free, email signup only)
+
+1. Sign up at <https://console.neon.tech> (no credit card) and create a project.
+   Pick a region close to the Vercel region (Frankfurt, Washington DC, or
+   Singapore depending on where you sign up from).
+2. Copy the **connection string** from *Connection Details* — it looks like
+   `postgresql://user:password@host.neon.tech/neondb?sslmode=require`.
+
+### 2. App — Vercel (free)
+
+1. Push this repo to GitHub, then sign up at <https://vercel.com> (no card).
+2. **Add New Project** → import the `ayyanet-ticketing` repo.
+3. Do **not** pick a framework preset — `vercel.json` in the repo configures the
+   PHP function and the `npm run build` step automatically.
+4. In **Project → Settings → Environment Variables**, set (full list in
+   `deploy/.env.vercel.example`):
+
+   | Key | Value |
+   | --- | --- |
+   | `APP_KEY` | output of `php artisan key:generate --show` |
+   | `APP_ENV` | `production` |
+   | `APP_DEBUG` | `false` |
+   | `APP_URL` | `https://<project>.vercel.app` |
+   | `DB_CONNECTION` | `pgsql` |
+   | `DB_URL` | the Neon connection string |
+   | `SESSION_DRIVER` / `CACHE_STORE` / `QUEUE_CONNECTION` | `database` |
+   | `LOG_CHANNEL` | `stderr` (the function disk is read-only) |
+   | `APP_SEED` | `true` — **first deploy only**, then remove (seeder wipes data) |
+
+5. **Deploy.** Migrations run automatically on every deploy via the composer
+   `vercel` script (seeding only when `APP_SEED=true`). First login after
+   seeding: `test@example.com` / `password` (admin).
+6. After the first successful deploy, delete the `APP_SEED` variable and deploy
+   again — never leave seeding on, it wipes tickets/customers.
+
+### Serverless specifics
+
+- The function filesystem is **read-only except `/tmp`**; the app already runs
+  with `SESSION_DRIVER=database`, `CACHE_STORE=database`,
+  `QUEUE_CONNECTION=database`, `LOG_CHANNEL=stderr` and compiled views in
+  `/tmp` (via `VIEW_COMPILED_PATH`), so no disk writes are needed.
+- Queues don't run on serverless — jobs that rely on the worker simply wait.
+  This app's jobs only email notifications, so mail is unaffected until the
+  worker is running elsewhere.
+- Cold starts take a few seconds on the free tier; Neon free also sleeps after
+  5 min idle and wakes on the first query.
+
+## Alternative: Deploy to Koyeb (free, no credit card)
 
 The repo ships with a Koyeb-ready Docker setup in `deploy/` (nginx + php-fpm +
 queue worker in a single container; migrations run automatically on boot) and a
