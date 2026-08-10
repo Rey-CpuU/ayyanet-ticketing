@@ -7,5 +7,12 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
         }),
+        {
+            name: 'force-exit-after-build',
+            apply: 'build',
+            closeBundle() {
+                setTimeout(() => process.exit(0), 0);
+            },
+        },
     ],
 });
