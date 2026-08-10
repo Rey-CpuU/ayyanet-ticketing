@@ -41,48 +41,60 @@ php artisan boost:install
 
 Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
 
-## Deploy to Render (free)
+## Deploy to Koyeb (free, no credit card)
 
-The repo ships with a `render.yaml` Blueprint (web service + Postgres, both on
-Render's free tier) and a Docker setup in `deploy/` (nginx + php-fpm + queue
-worker in a single container; migrations run automatically on boot).
+The repo ships with a Koyeb-ready Docker setup in `deploy/` (nginx + php-fpm +
+queue worker in a single container; migrations run automatically on boot) and a
+Neon Postgres reference in `deploy/.env.production.example`. A Render Blueprint
+(`render.yaml`) is also included as an alternative if you later get a card.
 
-### One-time setup
+### 1. Database — Neon (free, email signup only)
 
-1. Push this repo to GitHub (already linked at `github.com/Rey-CpuU/ayyanet-ticketing`).
-2. In the Render Dashboard: **New + → Blueprint** → pick the repo. Render reads
-   `render.yaml` and provisions a free Postgres + free web service.
-3. When prompted for **APP_KEY**, paste the output of:
+1. Sign up at <https://console.neon.tech> (no credit card) and create a project.
+   Pick a region close to the Koyeb one you'll choose (Frankfurt or Washington DC).
+2. Copy the **connection string** from *Connection Details* — it looks like
+   `postgresql://user:password@host.neon.tech/neondb?sslmode=require`.
 
-   ```bash
-   php artisan key:generate --show
-   ```
+### 2. App — Koyeb (free)
 
-   The key must stay stable across restarts, so don't use `generateValue`.
-4. If Render assigns a different subdomain than `ayyanet-ticketing.onrender.com`,
-   update `APP_URL` on the service in the dashboard.
-5. For demo data on the first boot, add `APP_SEED=true` as an environment
-   variable, deploy, then **remove it** (the seeder wipes tickets/customers on
-   every run). After that, log in with `test@example.com` / `password` (admin).
+1. Sign up at <https://app.koyeb.com> (no credit card) and link your GitHub.
+2. **Create Web Service** → select the `ayyanet-ticketing` repo.
+3. Builder: **Dockerfile** — set the Dockerfile path to `deploy/Dockerfile`.
+4. Region: `Frankfurt` (or `Washington, D.C.`), instance type: **Free**.
+5. Env vars (see `deploy/.env.production.example` for the full list):
+
+   | Key | Value |
+   | --- | --- |
+   | `APP_KEY` | output of `php artisan key:generate --show` |
+   | `APP_ENV` | `production` |
+   | `APP_DEBUG` | `false` |
+   | `APP_URL` | `https://<app>-<org>.koyeb.app` (what Koyeb assigns) |
+   | `DB_CONNECTION` | `pgsql` |
+   | `DB_URL` | the Neon connection string |
+   | `SESSION_DRIVER` / `QUEUE_CONNECTION` / `CACHE_STORE` | `database` |
+   | `APP_SEED` | `true` — first boot only, then remove (seeder wipes data) |
+
+6. Deploy and watch the logs — migrations run automatically on boot.
+   First login after seeding: `test@example.com` / `password` (admin).
 
 ### Free-tier limits to expect
 
-- The service **spins down after 15 min of inactivity**; the next visit takes
-  ~1 minute to wake. Queue workers sleep too, so mail/jobs only run while the
-  site is awake.
+- The Koyeb service **sleeps after 1 hour without traffic** and wakes on the
+  next visit. Queue workers sleep too, so jobs only run while the site is awake.
 - The **filesystem is ephemeral** (lost on restart/redeploy). This app keeps no
   local uploads, so it's safe here.
-- The free Postgres is **1 GB and expires 30 days after creation** (14-day
-  grace to upgrade, then it's deleted). Upgrade it in the dashboard to keep data.
-- 750 free instance-hours/month per workspace; the queue worker shares the web
-  instance, so no extra hours are consumed.
+- Neon free: **0.5 GB storage, 100 compute-hours/month**, sleeps after 5 min
+  idle (first query after idle takes a few seconds). Idle usage costs ~0 hours,
+  so a small demo stays comfortably inside the limits.
+- One free Koyeb web service per account; it can only run in Frankfurt or
+  Washington, D.C. No card is required on the free tier.
 
 ### Email (optional)
 
-Render free web services cannot send SMTP on ports 25/465/587. Resend offers
-alternate ports: use `MAIL_PORT=2587` with `MAIL_ENCRYPTION=tls` (or `2465`
-with `ssl`). Until set, mail falls back to the `log` mailer. See
-`deploy/.env.render.example` for the full reference.
+Koyeb free instances allow outbound SMTP, so the standard Resend setup works:
+`MAIL_MAILER=smtp`, `MAIL_HOST=smtp.resend.com`, `MAIL_PORT=587`,
+`MAIL_USERNAME=resend`, `MAIL_PASSWORD=re_...`, `MAIL_ENCRYPTION=tls`, plus a
+verified `MAIL_FROM_ADDRESS`. Until set, mail falls back to the `log` mailer.
 
 ## Contributing
 
