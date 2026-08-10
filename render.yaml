@@ -1,0 +1,71 @@
+# Render Blueprint - Ayyanet Ticketing (free tier)
+# Reference: https://render.com/docs/blueprint-spec
+#
+# Setup: push this repo to GitHub, then in the Render Dashboard choose
+# "New +" > "Blueprint" and select the ayyanet-ticketing repository.
+# During Blueprint creation you will be prompted for APP_KEY - paste the
+# output of `php artisan key:generate --show` (see README "Deploy to Render").
+
+databases:
+  - name: ayyanet-db
+    plan: free
+    region: oregon
+    databaseName: ayyanet
+    user: ayyanet
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: ayyanet-ticketing
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    dockerfilePath: ./deploy/Dockerfile
+    dockerContext: .
+    autoDeployTrigger: commit
+    healthCheckPath: /up
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_NAME
+        value: Ayyanet
+      # Render derives the public URL from the service name:
+      # https://ayyanet-ticketing.onrender.com
+      # If that subdomain is taken, change this to the URL Render assigns.
+      - key: APP_URL
+        value: https://ayyanet-ticketing.onrender.com
+      # Prompted during Blueprint creation. Must be stable across restarts
+      # (do NOT use generateValue - Laravel requires the "base64:" prefix).
+      - key: APP_KEY
+        sync: false
+      - key: DB_CONNECTION
+        value: pgsql
+      # Laravel 13 reads the connection string from DB_URL. Auto-wired to the
+      # Postgres database above; the DB is on Render's private network.
+      - key: DB_URL
+        fromDatabase:
+          name: ayyanet-db
+          property: connectionString
+      - key: SESSION_DRIVER
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: BROADCAST_CONNECTION
+        value: log
+      - key: LOG_CHANNEL
+        value: stack
+      - key: LOG_STACK
+        value: single
+      - key: LOG_LEVEL
+        value: error
+      # Demo data on the FIRST boot only: set APP_SEED=true once, deploy,
+      # then remove it. The seeder wipes tickets/customers, so never leave it on.
+      # - key: APP_SEED
+      #   value: "true"

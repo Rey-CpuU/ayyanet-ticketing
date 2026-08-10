@@ -44,6 +44,8 @@ COPY deploy/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
 COPY deploy/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-EXPOSE ${PORT}
+# Fixed value: Render sets $PORT only at runtime, so a variable EXPOSE would
+# fail the build. The entrypoint substitutes the real $PORT into nginx config.
+EXPOSE 8000
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
