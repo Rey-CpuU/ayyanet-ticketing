@@ -1,0 +1,491 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens — single source of truth for theming.
+ * Light (normal) is the default in :root; the original dark palette
+ * lives in [data-theme='dark'] and is applied by the theme toggle.
+ */
+:root {
+    /* Surfaces & text */
+    --background: #f4f1eb;        /* soft warm cream, less glare */
+    --surface: #eaede9;           /* nav / header strip */
+    --surface-2: #e3e7e2;         /* pale sage — cards & inputs */
+    --surface-3: #dde3dd;         /* hover fills */
+    --border: #d8ddd8;            /* soft sage-taupe edges */
+    --border-strong: #c2cbc4;
+    --foreground: #45525c;        /* soft charcoal — lower contrast, gentler */
+    --muted: #71807a;
+    --muted-strong: #5f6e67;
+
+    /* Accent / CTA (muted terracotta, softened) */
+    --accent: #cb8062;
+    --accent-hover: #b86a4e;
+    --accent-cta: #b4573f;        /* deeper so white text passes contrast */
+    --accent-cta-hover: #a34c36;
+    --accent-soft: rgba(203, 128, 98, 0.13);
+    --accent-text: #a8654e;       /* accent-tinted text on soft fills */
+    --accent-text-strong: #9c5a42;
+    --glow-accent: rgba(203, 128, 98, 0.35);
+
+    /* Neutrals & effects — softer shadows, aurora, scrollbar */
+    --hover-overlay: rgba(45, 55, 72, 0.05);
+    --card-shadow: 0 1px 3px 0 rgb(45 55 72 / 0.1), 0 1px 2px -1px rgb(45 55 72 / 0.1);
+    --card-3d-bg: #f8f5ef;
+    --card-3d-grad-a: rgba(203, 128, 98, 0.4);
+    --card-3d-grad-b: rgba(133, 165, 142, 0.3);
+    --card-3d-grad-c: rgba(212, 221, 214, 0.25);
+    --card-3d-topline: rgba(255, 255, 255, 0.7);
+    --card-3d-shadow: 0 18px 44px -30px rgba(45, 55, 72, 0.25);
+    --card-3d-shadow-hover: rgba(203, 128, 98, 0.25);
+    --aurora-a: rgba(203, 128, 98, 0.2);
+    --aurora-b: rgba(133, 165, 142, 0.24);
+    --select-option-bg: #f4f1eb;
+    --select-option-fg: #45525c;
+    --scroll-thumb: rgba(86, 101, 94, 0.28);
+
+    /* Semantic status colors — muted mid-tones, clearly distinct */
+    --red-text: #b54545;
+    --red-bright: #c05656;
+    --red-solid: #c94a4a;
+    --red-solid-hover: #b03f3f;
+    --red-glow: 0 0 10px rgba(201, 74, 74, 0.16);
+    --amber-text: #9d6f3f;
+    --amber-glow: 0 0 10px rgba(157, 111, 63, 0.14);
+    --blue-text: #4a6db0;
+    --blue-glow: 0 0 10px rgba(74, 109, 176, 0.14);
+    --slate-text: #67756e;
+    --slate-glow: none;
+    --green-text: #3f704c;
+    --orange-text: #b4653a;
+    --violet-text: #7a5fc0;
+    --cyan-text: #3d7a88;
+    --pink-text: #b25063;
+    --amber-light-text: #8f6a35;
+    --orange-light-text: #96603a;
+
+    /* Status banner strip — softened */
+    --banner-outage-bg: rgba(201, 74, 74, 0.06);
+    --banner-outage-border: #c96a6a;
+    --banner-outage-accent: #c05656;
+    --banner-outage-muted: #c2566b;
+    --banner-maintenance-bg: rgba(171, 122, 69, 0.08);
+    --banner-maintenance-border: #b08050;
+    --banner-maintenance-accent: #ab7a45;
+    --banner-maintenance-muted: #8f6a35;
+    --banner-warning-bg: rgba(180, 101, 58, 0.06);
+    --banner-warning-border: #b46f45;
+    --banner-warning-accent: #b4653a;
+    --banner-warning-muted: #96603a;
+    --banner-info-bg: rgba(122, 95, 192, 0.07);
+    --banner-info-border: #8a6fd0;
+    --banner-info-accent: #7a5fc0;
+    --banner-info-muted: #6f58a8;
+
+    /*
+     * Derived opacity tokens — color-mix resolves var(--x) per theme at use time,
+     * so these live in :root only. Replaces Tailwind "/NN" modifiers, which are
+     * silently dropped when the target color is a var() reference (Tailwind 3.4).
+     */
+    --surface-90: color-mix(in srgb, var(--surface) 90%, transparent);
+    --accent-30: color-mix(in srgb, var(--accent) 30%, transparent);
+    --accent-40: color-mix(in srgb, var(--accent) 40%, transparent);
+    --amber-text-06: color-mix(in srgb, var(--amber-text) 6%, transparent);
+    --amber-text-07: color-mix(in srgb, var(--amber-text) 7%, transparent);
+    --amber-text-40: color-mix(in srgb, var(--amber-text) 40%, transparent);
+    --amber-text-50: color-mix(in srgb, var(--amber-text) 50%, transparent);
+    --amber-text-60: color-mix(in srgb, var(--amber-text) 60%, transparent);
+    --green-text-06: color-mix(in srgb, var(--green-text) 6%, transparent);
+    --green-text-08: color-mix(in srgb, var(--green-text) 8%, transparent);
+    --green-text-10: color-mix(in srgb, var(--green-text) 10%, transparent);
+    --green-text-30: color-mix(in srgb, var(--green-text) 30%, transparent);
+    --green-text-60: color-mix(in srgb, var(--green-text) 60%, transparent);
+    --red-text-10: color-mix(in srgb, var(--red-text) 10%, transparent);
+    --red-text-20: color-mix(in srgb, var(--red-text) 20%, transparent);
+    --red-text-30: color-mix(in srgb, var(--red-text) 30%, transparent);
+    --red-text-40: color-mix(in srgb, var(--red-text) 40%, transparent);
+    --red-solid-07: color-mix(in srgb, var(--red-solid) 7%, transparent);
+    --border-60: color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+[data-theme='dark'] {
+    /* Surfaces & text — original palette */
+    --background: #0c0e14;
+    --surface: #12141c;
+    --surface-2: #181b26;
+    --surface-3: #1d2230;
+    --border: #1f2333;
+    --border-strong: #2a2f45;
+    --foreground: #e8eaf0;
+    --muted: #8b90a7;
+    --muted-strong: #5b6075;
+
+    /* Accent — original violet */
+    --accent: #7c5cfc;
+    --accent-hover: #6d4df5;
+    --accent-cta: #7c5cfc;
+    --accent-cta-hover: #6d4df5;
+    --accent-soft: rgba(124, 92, 252, 0.15);
+    --accent-text: #a78bfa;
+    --accent-text-strong: #c4b5fd;
+    --glow-accent: rgba(124, 92, 252, 0.5);
+
+    /* Neutrals & effects */
+    --hover-overlay: rgba(255, 255, 255, 0.05);
+    --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+    --card-3d-bg: #161926;
+    --card-3d-grad-a: rgba(124, 92, 252, 0.5);
+    --card-3d-grad-b: rgba(6, 182, 212, 0.28);
+    --card-3d-grad-c: rgba(31, 35, 51, 0.05);
+    --card-3d-topline: rgba(255, 255, 255, 0.22);
+    --card-3d-shadow: 0 18px 44px -30px rgba(0, 0, 0, 0.95);
+    --card-3d-shadow-hover: rgba(124, 92, 252, 0.5);
+    --aurora-a: rgba(124, 92, 252, 0.6);
+    --aurora-b: rgba(6, 182, 212, 0.45);
+    --select-option-bg: #161926;
+    --select-option-fg: #e8eaf0;
+    --scroll-thumb: rgba(148, 163, 184, 0.22);
+
+    /* Semantic status colors — original */
+    --red-text: #ef4444;
+    --red-bright: #f87171;
+    --red-solid: #ef4444;
+    --red-solid-hover: #dc2626;
+    --red-glow: 0 0 14px rgba(239, 68, 68, 0.45);
+    --amber-text: #fbbf24;
+    --amber-glow: 0 0 12px rgba(245, 158, 11, 0.35);
+    --blue-text: #60a5fa;
+    --blue-glow: 0 0 12px rgba(59, 130, 246, 0.3);
+    --slate-text: #9ca3af;
+    --slate-glow: none;
+    --green-text: #4ade80;
+    --orange-text: #fb923c;
+    --violet-text: #a78bfa;
+    --cyan-text: #22d3ee;
+    --pink-text: #fca5a5;
+    --amber-light-text: #fde68a;
+    --orange-light-text: #fdba74;
+
+    /* Status banner strip — original */
+    --banner-outage-bg: #241114;
+    --banner-outage-border: #ef4444;
+    --banner-outage-accent: #f87171;
+    --banner-outage-muted: #fca5a5;
+    --banner-maintenance-bg: #231b0e;
+    --banner-maintenance-border: #f59e0b;
+    --banner-maintenance-accent: #fbbf24;
+    --banner-maintenance-muted: #fde68a;
+    --banner-warning-bg: #231408;
+    --banner-warning-border: #f97316;
+    --banner-warning-accent: #fb923c;
+    --banner-warning-muted: #fdba74;
+    --banner-info-bg: #171433;
+    --banner-info-border: #7c5cfc;
+    --banner-info-accent: #a78bfa;
+    --banner-info-muted: #c4b5fd;
+}
+
+html, body {
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: 'Inter', sans-serif;
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+body {
+    @apply antialiased;
+}
+
+#app {
+    min-height: 100vh;
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+.font-display {
+    font-family: 'Inter', sans-serif;
+}
+
+.font-mono {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ---------- Scrollbars ---------- */
+.ticket-scroll::-webkit-scrollbar,
+.ticket-list::-webkit-scrollbar,
+.ticket-detail-scroll::-webkit-scrollbar,
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.ticket-scroll::-webkit-scrollbar-thumb,
+.ticket-list::-webkit-scrollbar-thumb,
+.ticket-detail-scroll::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-thumb {
+    background: var(--scroll-thumb);
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* ---------- Reusable components ---------- */
+@layer components {
+    .card {
+        border-radius: 0.5rem;
+        border: 1px solid var(--border);
+        background-color: var(--surface-2);
+    }
+
+    .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: 0.375rem;
+        background-color: var(--accent-cta);
+        padding: 0.5rem 1rem;
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+        transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-cta-hover);
+    }
+
+    .btn-primary:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.5;
+    }
+
+    .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: 0.375rem;
+        border: 1px solid var(--border-strong);
+        background-color: var(--surface-2);
+        padding: 0.5rem 1rem;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--muted);
+        transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--hover-overlay);
+        color: var(--foreground);
+    }
+
+    .btn-secondary:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+
+    .btn-danger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: 0.375rem;
+        background-color: color-mix(in srgb, var(--red-solid) 10%, transparent);
+        padding: 0.5rem 1rem;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--red-text);
+        transition: background-color 0.15s ease;
+    }
+
+    .btn-danger:hover {
+        background-color: color-mix(in srgb, var(--red-solid) 20%, transparent);
+    }
+
+    .btn-danger:focus-visible {
+        outline: 2px solid var(--red-text);
+        outline-offset: 2px;
+    }
+
+    .input {
+        width: 100%;
+        border-radius: 0.375rem;
+        border: 1px solid var(--border-strong);
+        background-color: var(--surface-2);
+        padding: 0.625rem 0.875rem;
+        font-size: 13.5px;
+        color: var(--foreground);
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .input::placeholder {
+        color: var(--muted);
+    }
+
+    .input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+
+    .label {
+        display: block;
+        margin-bottom: 0.375rem;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        border-radius: 0.25rem;
+        padding: 3px 8px;
+        font-size: 10.5px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+}
+
+/* ---------- Futuristic 3D surface layer ---------- */
+
+/* Ambient aurora behind the whole app for depth. */
+.fx-ambient {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.fx-ambient::before,
+.fx-ambient::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(110px);
+    opacity: 0.32;
+}
+
+.fx-ambient::before {
+    width: 520px;
+    height: 520px;
+    top: -180px;
+    right: -140px;
+    background: radial-gradient(circle, var(--aurora-a), transparent 65%);
+    animation: fx-drift 26s ease-in-out infinite alternate;
+}
+
+.fx-ambient::after {
+    width: 460px;
+    height: 460px;
+    bottom: -160px;
+    left: -140px;
+    background: radial-gradient(circle, var(--aurora-b), transparent 65%);
+    animation: fx-drift 32s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes fx-drift {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(60px, 40px, 0) scale(1.12); }
+}
+
+/* Glass card with a gradient border + 3D hover lift. Add on top of .card. */
+.card-3d {
+    position: relative;
+    border: 1px solid transparent;
+    background: linear-gradient(var(--card-3d-bg), var(--card-3d-bg)) padding-box,
+                linear-gradient(140deg, var(--card-3d-grad-a), var(--card-3d-grad-b), var(--card-3d-grad-c) 72%) border-box;
+    box-shadow: inset 0 1px 0 var(--card-3d-topline), var(--card-3d-shadow);
+    transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s ease;
+}
+
+.card-3d::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: inherit;
+    background: linear-gradient(90deg, transparent, var(--card-3d-topline), transparent);
+    opacity: 0.55;
+}
+
+.card-3d:hover {
+    transform: translateY(-3px);
+    box-shadow: inset 0 1px 0 var(--card-3d-topline),
+                0 30px 64px -26px var(--card-3d-shadow-hover),
+                0 14px 34px -18px var(--card-shadow);
+}
+
+/* Glow text for stat numbers. */
+.fx-glow-text {
+    text-shadow: 0 0 22px currentColor;
+}
+
+/* Small "operational impact" strip chip. */
+.fx-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold;
+}
+
+/* Assignee quick-pick: native select styled as a futuristic chip. */
+.select-chip {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2355655e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 9px center;
+    background-size: 10px 6px;
+    padding-right: 26px;
+    cursor: pointer;
+    outline: none;
+}
+
+[data-theme='dark'] .select-chip {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b90a7' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.select-chip option {
+    background-color: var(--select-option-bg);
+    color: var(--select-option-fg);
+}
+
+/* Pulse ring for ownerless tickets — draws the eye to unplaced work. */
+@keyframes fx-pulse-ring {
+    0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--amber-text) 35%, transparent); }
+    70%  { box-shadow: 0 0 0 6px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.fx-unassigned-pulse {
+    animation: fx-pulse-ring 2.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fx-ambient::before,
+    .fx-ambient::after,
+    .card-3d,
+    .fx-unassigned-pulse {
+        animation: none;
+        transition: none;
+    }
+}
