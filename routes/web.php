@@ -15,21 +15,40 @@ Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
-Route::get('/dashboard', function () {
-    $tickets = Ticket::with(['customer', 'messages', 'assignee'])->latest()->get();
-
+Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
+    // Generate base stats independent of search/filter
     $stats = [
-        'total'    => $tickets->count(),
-        'open'     => $tickets->where('status', 'Open')->count(),
-        'checking' => $tickets->where('status', 'Checking')->count(),
-        'waiting'  => $tickets->where('status', 'Waiting Customer')->count(),
-        'escalated' => $tickets->where('status', 'Escalated')->count(),
-        'solved'   => $tickets->where('status', 'Solved')->count(),
-        'closed'   => $tickets->where('status', 'Closed')->count(),
-        'unassigned' => $tickets->where('assigned_to', null)->count(),
-        'mine'     => $tickets->where('assigned_to', auth()->id())->count(),
-        'critical' => $tickets->where('impact', 'Critical')->count(),
+        'total'    => Ticket::count(),
+        'open'     => Ticket::where('status', 'Open')->count(),
+        'checking' => Ticket::where('status', 'Checking')->count(),
+        'waiting'  => Ticket::where('status', 'Waiting Customer')->count(),
+        'escalated' => Ticket::where('status', 'Escalated')->count(),
+        'solved'   => Ticket::where('status', 'Solved')->count(),
+        'closed'   => Ticket::where('status', 'Closed')->count(),
+        'unassigned' => Ticket::whereNull('assigned_to')->count(),
+        'mine'     => Ticket::where('assigned_to', auth()->id())->count(),
+        'critical' => Ticket::where('impact', 'Critical')->count(),
     ];
+
+    $query = Ticket::with(['customer', 'messages', 'assignee'])->latest();
+
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('ticket_number', 'like', "%{$search}%")
+              ->orWhere('title', 'like', "%{$search}%");
+        });
+    }
+
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
+    }
+
+    if ($request->filled('priority')) {
+        $query->where('priority', $request->priority);
+    }
+
+    $tickets = $query->paginate(15)->withQueryString();
 
     $assignableUsers = User::whereNotNull('role')->orderBy('name')->get();
     $uniqueCustomers = Customer::orderBy('name')->get();

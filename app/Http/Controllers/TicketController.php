@@ -59,6 +59,7 @@ class TicketController extends Controller
         $staffUsers = User::whereIn('role', ['admin', 'cs'])->get();
         foreach ($staffUsers as $user) {
             Mail::to($user->email)->queue(new TicketCreated($ticket));
+            $user->notify(new \App\Notifications\TicketCreatedNotification($ticket));
         }
 
         return redirect('/tickets')
@@ -102,6 +103,7 @@ class TicketController extends Controller
                 $admins = User::where('role', 'admin')->get();
                 foreach ($admins as $admin) {
                     Mail::to($admin->email)->queue(new TicketStatusChanged($ticket));
+                    $admin->notify(new \App\Notifications\TicketStatusChangedNotification($ticket));
                 }
             }
         }
@@ -137,6 +139,7 @@ class TicketController extends Controller
 
         if ($newAssigneeUser) {
             Mail::to($newAssigneeUser->email)->queue(new TicketAssigned($ticket));
+            $newAssigneeUser->notify(new \App\Notifications\TicketAssignedNotification($ticket));
         }
 
         return back()->with('success', $assignedTo

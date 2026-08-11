@@ -65,6 +65,12 @@ services:
         value: single
       - key: LOG_LEVEL
         value: error
+      - key: MAIL_MAILER
+        value: resend
+      - key: MAIL_FROM_ADDRESS
+        value: onboarding@resend.dev
+      - key: RESEND_API_KEY
+        sync: false
       # Demo data on the FIRST boot only: set APP_SEED=true once, deploy,
       # then remove it. The seeder wipes tickets/customers, so never leave it on.
       # - key: APP_SEED

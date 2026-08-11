@@ -41,7 +41,42 @@
             </div>
 
             <!-- Settings Dropdown / Auth -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
+            <div class="hidden sm:flex sm:items-center sm:ms-6 gap-2">
+                @auth
+                    <x-dropdown align="right" width="64">
+                        <x-slot name="trigger">
+                            <button class="relative inline-flex items-center justify-center p-2 rounded-md text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] focus:outline-none transition">
+                                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                    <path d="M8 1.5a3.5 3.5 0 00-3.5 3.5v2.2L3.2 8.7A1 1 0 004 10.2h8a1 1 0 00.8-1.5L11.5 7.2V5A3.5 3.5 0 008 1.5zM6 11.5a2 2 0 004 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                @if (Auth::user()->unreadNotifications->count() > 0)
+                                    <span class="absolute top-1 right-1 flex h-2 w-2">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                    </span>
+                                @endif
+                            </button>
+                        </x-slot>
+
+                        <x-slot name="content">
+                            <div class="px-4 py-2 border-b border-[var(--border)] text-xs font-semibold text-[var(--foreground)] flex items-center justify-between">
+                                <span>Notifikasi</span>
+                                <span class="font-mono text-[10px] text-[var(--muted)]">{{ Auth::user()->unreadNotifications->count() }} unread</span>
+                            </div>
+                            <div class="max-h-60 overflow-y-auto divide-y divide-[var(--border)]">
+                                @forelse (Auth::user()->unreadNotifications->take(5) as $notification)
+                                    <a href="{{ route('tickets.show', $notification->data['ticket_id'] ?? '#') }}" class="block px-4 py-2.5 text-xs hover:bg-[var(--hover-overlay)] transition">
+                                        <div class="font-semibold text-[var(--foreground)]">{{ $notification->data['ticket_number'] ?? '' }}</div>
+                                        <div class="text-[11px] text-[var(--muted)] truncate">{{ $notification->data['message'] ?? '' }}</div>
+                                    </a>
+                                @empty
+                                    <div class="px-4 py-3 text-center text-xs text-[var(--muted)]">Tidak ada notifikasi baru</div>
+                                @endforelse
+                            </div>
+                        </x-slot>
+                    </x-dropdown>
+                @endauth
+
                 @include('partials.theme-toggle')
                 @auth
                     <x-dropdown align="right" width="48">
