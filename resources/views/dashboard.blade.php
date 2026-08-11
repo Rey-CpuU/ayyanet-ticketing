@@ -79,7 +79,7 @@
 
         {{-- Ticket queue + side panel --}}
         <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
-            <div class="card card-3d overflow-hidden rounded-lg" x-data="{ tab: 'unassigned' }">
+            <div class="card card-3d overflow-hidden rounded-lg" x-data="{ tab: 'unassigned', search: '', status: '', priority: '', impact: '', assignee: '', customer: '' }">
                 <div class="flex flex-col gap-3 border-b border-[var(--border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                     <div class="flex items-center gap-2.5">
                         <h3 class="font-display text-[14px] font-bold tracking-[-0.01em] text-[var(--foreground)]">Ticket Queue</h3>
@@ -109,6 +109,66 @@
                     </div>
                 </div>
 
+                {{-- Filter bar --}}
+                <div class="border-b border-[var(--border)] bg-[var(--surface-3)] px-4 py-3 sm:px-5">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="min-w-[160px] flex-1">
+                            <input type="text" x-model="search" placeholder="Search title or number..."
+                                   class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2.5 py-1 text-[11.5px] text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--accent)] focus:outline-none" />
+                        </div>
+                        <div class="w-full sm:w-auto">
+                            <select x-model="status" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
+                                <option value="">All Statuses</option>
+                                <option value="Open">Open</option>
+                                <option value="Checking">Checking</option>
+                                <option value="Waiting Customer">Waiting Customer</option>
+                                <option value="Escalated">Escalated</option>
+                                <option value="Solved">Solved</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                        <div class="w-full sm:w-auto">
+                            <select x-model="priority" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
+                                <option value="">All Priorities</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                        <div class="w-full sm:w-auto">
+                            <select x-model="impact" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
+                                <option value="">All Impacts</option>
+                                <option value="Critical">Critical</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                        <div class="w-full sm:w-auto">
+                            <select x-model="assignee" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
+                                <option value="">All Assignees</option>
+                                <option value="unassigned">Unassigned</option>
+                                @foreach ($assignableUsers as $agent)
+                                    <option value="{{ $agent->id }}">{{ $agent->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="w-full sm:w-auto">
+                            <select x-model="customer" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
+                                <option value="">All Customers</option>
+                                @foreach ($uniqueCustomers as $cust)
+                                    <option value="{{ $cust->id }}">{{ $cust->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <button type="button" @click="search = ''; status = ''; priority = ''; impact = ''; assignee = ''; customer = ''"
+                                x-show="search !== '' || status !== '' || priority !== '' || impact !== '' || assignee !== '' || customer !== ''"
+                                class="text-[11.5px] font-semibold text-[var(--accent)] hover:text-[var(--accent-text)] transition" x-cloak>
+                            Clear
+                        </button>
+                    </div>
+                </div>
+
                 <div class="max-h-[calc(100vh-320px)] overflow-y-auto">
                     @forelse ($tickets as $ticket)
                         @php
@@ -134,7 +194,14 @@
                                 : ($ticket->assigned_to === auth()->id() ? 'mine' : 'all');
                         @endphp
                         <div class="border-b border-[var(--border)] px-4 py-3.5 transition hover:bg-[var(--hover-overlay)] sm:px-5"
-                             x-show="tab === 'all' || tab === '{{ $tabKey }}'" x-cloak>
+                             x-show="(tab === 'all' || tab === '{{ $tabKey }}') &&
+                                     (search === '' || '{{ strtolower(addslashes($ticket->title)) }}'.includes(search.toLowerCase()) || '{{ strtolower($ticket->ticket_number) }}'.includes(search.toLowerCase())) &&
+                                     (status === '' || '{{ $ticket->status }}' === status) &&
+                                     (priority === '' || '{{ $ticket->priority }}' === priority) &&
+                                     (impact === '' || '{{ $ticket->impact ?? 'Medium' }}' === impact) &&
+                                     (assignee === '' || (assignee === 'unassigned' ? {{ $ticket->assigned_to === null ? 'true' : 'false' }} : '{{ $ticket->assigned_to }}' === assignee)) &&
+                                     (customer === '' || '{{ $ticket->customer_id }}' === customer)"
+                             x-cloak>
                             <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
                                 <div class="flex min-w-0 flex-1 items-center gap-3">
                                     <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--surface-3)] text-[11px] font-semibold text-[var(--foreground)]">

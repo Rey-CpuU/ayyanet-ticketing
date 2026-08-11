@@ -15,8 +15,10 @@ class TicketController extends Controller
     public function index()
     {
         $tickets = Ticket::with(['customer', 'creator', 'assignee'])->latest()->get();
+        $assignableUsers = User::whereNotNull('role')->orderBy('name')->get();
+        $uniqueCustomers = Customer::orderBy('name')->get();
 
-        return view('tickets.index', compact('tickets'));
+        return view('tickets.index', compact('tickets', 'assignableUsers', 'uniqueCustomers'));
     }
 
     public function create()

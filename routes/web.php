@@ -8,6 +8,7 @@ use App\Http\Controllers\StatusBannerController;
 use App\Http\Controllers\UserController;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Models\Customer;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -31,8 +32,9 @@ Route::get('/dashboard', function () {
     ];
 
     $assignableUsers = User::whereNotNull('role')->orderBy('name')->get();
+    $uniqueCustomers = Customer::orderBy('name')->get();
 
-    return view('dashboard', compact('tickets', 'stats', 'assignableUsers'));
+    return view('dashboard', compact('tickets', 'stats', 'assignableUsers', 'uniqueCustomers'));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // --- TARUH DI SINI (LUAR AUTH) UNTUK SEMENTARA ---

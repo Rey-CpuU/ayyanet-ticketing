@@ -21,7 +21,67 @@
             </div>
         @endif
 
-        <div class="card card-3d overflow-hidden rounded-lg">
+        <div class="card card-3d overflow-hidden rounded-lg" x-data="{ search: '', status: '', priority: '', impact: '', assignee: '', customer: '' }">
+            {{-- Filter bar --}}
+            <div class="border-b border-[var(--border)] bg-[var(--surface-3)] px-4 py-3 sm:px-5">
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="min-w-[160px] flex-1">
+                        <input type="text" x-model="search" placeholder="Search title or number..."
+                               class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2.5 py-1 text-[11.5px] text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--accent)] focus:outline-none" />
+                    </div>
+                    <div class="w-full sm:w-auto">
+                        <select x-model="status" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
+                            <option value="">All Statuses</option>
+                            <option value="Open">Open</option>
+                            <option value="Checking">Checking</option>
+                            <option value="Waiting Customer">Waiting Customer</option>
+                            <option value="Escalated">Escalated</option>
+                            <option value="Solved">Solved</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+                    <div class="w-full sm:w-auto">
+                        <select x-model="priority" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
+                            <option value="">All Priorities</option>
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+                    <div class="w-full sm:w-auto">
+                        <select x-model="impact" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
+                            <option value="">All Impacts</option>
+                            <option value="Critical">Critical</option>
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+                    <div class="w-full sm:w-auto">
+                        <select x-model="assignee" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
+                            <option value="">All Assignees</option>
+                            <option value="unassigned">Unassigned</option>
+                            @foreach ($assignableUsers as $agent)
+                                <option value="{{ $agent->id }}">{{ $agent->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="w-full sm:w-auto">
+                        <select x-model="customer" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
+                            <option value="">All Customers</option>
+                            @foreach ($uniqueCustomers as $cust)
+                                <option value="{{ $cust->id }}">{{ $cust->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="button" @click="search = ''; status = ''; priority = ''; impact = ''; assignee = ''; customer = ''"
+                            x-show="search !== '' || status !== '' || priority !== '' || impact !== '' || assignee !== '' || customer !== ''"
+                            class="text-[11.5px] font-semibold text-[var(--accent)] hover:text-[var(--accent-text)] transition" x-cloak>
+                        Clear
+                    </button>
+                </div>
+            </div>
+
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[980px] text-left">
                     <thead>
@@ -61,7 +121,14 @@
                                     default => ['bg' => 'color-mix(in srgb, var(--slate-text) 12%, transparent)', 'text' => 'var(--slate-text)'],
                                 };
                             @endphp
-                            <tr class="transition hover:bg-[var(--hover-overlay)]">
+                            <tr class="transition hover:bg-[var(--hover-overlay)]"
+                                x-show="(search === '' || '{{ strtolower(addslashes($ticket->title)) }}'.includes(search.toLowerCase()) || '{{ strtolower($ticket->ticket_number) }}'.includes(search.toLowerCase())) &&
+                                        (status === '' || '{{ $ticket->status }}' === status) &&
+                                        (priority === '' || '{{ $ticket->priority }}' === priority) &&
+                                        (impact === '' || '{{ $ticket->impact ?? 'Medium' }}' === impact) &&
+                                        (assignee === '' || (assignee === 'unassigned' ? {{ $ticket->assigned_to === null ? 'true' : 'false' }} : '{{ $ticket->assigned_to }}' === assignee)) &&
+                                        (customer === '' || '{{ $ticket->customer_id }}' === customer)"
+                                x-cloak>
                                 <td class="px-5 py-4">
                                     <a href="{{ route('tickets.show', $ticket) }}" class="group block">
                                         <span class="font-mono text-[11px] font-medium text-[var(--accent)]">{{ $ticket->ticket_number }}</span>
