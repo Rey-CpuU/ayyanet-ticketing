@@ -47,8 +47,10 @@ return new class extends Migration
 
             DB::statement("alter table `ticket_activities` add constraint `ticket_activities_action_check` check (`action` in ('{$list}'))");
         } else {
-            DB::statement('alter table "ticket_activities" drop constraint if exists "ticket_activities_action_check"');
-            DB::statement("alter table \"ticket_activities\" add constraint \"ticket_activities_action_check\" check (\"action\" in ('{$list}'))");
+            if (DB::getDriverName() !== 'sqlite') {
+                DB::statement('alter table "ticket_activities" drop constraint if exists "ticket_activities_action_check"');
+                DB::statement("alter table \"ticket_activities\" add constraint \"ticket_activities_action_check\" check (\"action\" in ('{$list}'))");
+            }
         }
     }
 };
