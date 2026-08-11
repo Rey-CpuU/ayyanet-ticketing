@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TicketController;
-use App\Http\Controllers\CustomerController; // Ditambah jika ada CustomerController
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\TicketMessageController;
 use App\Http\Controllers\StatusBannerController;
 use App\Http\Controllers\UserController;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('login');
-});
+})->name('home');
 
 Route::get('/dashboard', function () {
     $tickets = Ticket::with(['customer', 'messages', 'assignee'])->latest()->get();
@@ -40,12 +40,10 @@ Route::get('/dashboard', function () {
 // --- TARUH DI SINI (LUAR AUTH) UNTUK SEMENTARA ---
 Route::post('tickets/classify', [TicketController::class, 'classify'])->name('tickets.classify');
 Route::resource('tickets', TicketController::class);
-Route::resource('customers', CustomerController::class); // jika butuh kelola customer
+Route::resource('customers', CustomerController::class); // if need to manage customers
 Route::get('status-banners/active', [StatusBannerController::class, 'active'])->name('status-banners.active');
 
-
 Route::middleware('auth')->group(function () {
-
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -67,8 +65,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        
+        Route::post('/invitations', [\App\Http\Controllers\InvitationController::class, 'store'])->name('invitations.store');
+        Route::post('/invitations/{invitation}/resend', [\App\Http\Controllers\InvitationController::class, 'resend'])->name('invitations.resend');
     });
 });
 
+Route::middleware('guest')->group(function () {
+    Route::get('/register/invite/{token}', [\App\Http\Controllers\InvitationController::class, 'show'])->name('register.invite');
+    Route::post('/register/invite/{token}', [\App\Http\Controllers\InvitationController::class, 'register']);
+});
 
-require __DIR__.'/auth.php';
+// require __DIR__.'/auth.php';

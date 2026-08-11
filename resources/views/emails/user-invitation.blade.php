@@ -1,16 +1,18 @@
 <x-mail::message>
-# Selamat datang, {{ $user->name }}!
+# Undangan Bergabung ke Ayyanet Ticketing
 
-Akun Anda di portal **Ayyanet Support Desk** telah dibuat oleh admin.
+Anda telah diundang untuk bergabung dengan platform **Ayyanet Ticketing** sebagai **{{ ucfirst($invitation->role) }}**.
 
-## Kredensial Login
+Untuk melengkapi pendaftaran dan membuat password akun Anda, silakan klik tombol di bawah ini:
 
-- **Email:** {{ $user->email }}
-- **Password sementara:** `{{ $temporaryPassword }}`
+<x-mail::button :url="route('register.invite', $invitation->token)">
+Buat Akun Anda
+</x-mail::button>
 
-Masuk di portal dan segera ganti password Anda melalui menu **Profile** setelah login pertama.
+*Link undangan ini hanya berlaku selama 5 jam sejak dikirimkan.*
 
-Jika Anda merasa tidak seharusnya menerima email ini, abaikan saja.
+Jika tombol di atas tidak berfungsi, salin dan tempel URL berikut ke browser Anda:
+{{ route('register.invite', $invitation->token) }}
 
 Terima kasih,<br>
 **Tim Ayyanet**

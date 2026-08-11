@@ -2,32 +2,31 @@
 
 namespace App\Mail;
 
-use App\Models\Invitation;
+use App\Models\Ticket;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class UserInvitation extends Mailable
+class TicketAssigned extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(
-        public Invitation $invitation,
-    ) {}
+    public function __construct(public Ticket $ticket) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Undangan Akses Ayyanet Ticketing',
+            subject: 'Penugasan Tiket: ' . $this->ticket->ticket_number,
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.user-invitation',
+            markdown: 'emails.ticket-assigned',
         );
     }
 }

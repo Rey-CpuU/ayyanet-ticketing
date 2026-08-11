@@ -26,7 +26,10 @@
             </div>
         @endif
 
-        <div class="card overflow-hidden">
+        <div class="card overflow-hidden mb-8">
+            <div class="border-b border-[var(--border)] bg-[var(--surface)] px-5 py-3.5">
+                <h3 class="text-[14px] font-bold text-[var(--foreground)]">Active Users</h3>
+            </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[760px] text-left">
                     <thead>
@@ -92,5 +95,50 @@
                 </table>
             </div>
         </div>
+
+        @if (isset($invitations) && $invitations->count() > 0)
+            <div class="card overflow-hidden">
+                <div class="border-b border-[var(--border)] bg-[var(--surface)] px-5 py-3.5">
+                    <h3 class="text-[14px] font-bold text-[var(--foreground)]">Pending Invitations</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[760px] text-left">
+                        <thead>
+                            <tr class="border-b border-[var(--border)] bg-[var(--surface)]">
+                                <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Email</th>
+                                <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Role</th>
+                                <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Expires</th>
+                                <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[var(--border)]">
+                            @foreach ($invitations as $invitation)
+                                <tr class="transition hover:bg-[var(--hover-overlay)]">
+                                    <td class="px-5 py-4 font-mono text-[13px] text-[var(--foreground)]">
+                                        {{ $invitation->email }}
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <span class="badge bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">{{ ucfirst($invitation->role) }}</span>
+                                    </td>
+                                    <td class="px-5 py-4 font-mono text-[11.5px] text-[var(--muted)]">
+                                        @if ($invitation->expires_at->isPast())
+                                            <span class="text-red-500 font-semibold">Expired</span>
+                                        @else
+                                            {{ $invitation->expires_at->diffForHumans() }}
+                                        @endif
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <form method="POST" action="{{ route('invitations.resend', $invitation) }}">
+                                            @csrf
+                                            <button type="submit" class="btn-secondary !px-3 !py-1.5 text-xs">Resend Invite</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
     </div>
 </x-app-layout>

@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="font-display text-[17px] font-bold tracking-[-0.02em] text-[var(--foreground)]">Invite User</h2>
-                <p class="mt-0.5 text-[12.5px] text-[var(--muted)]">Create an account — a temporary password is emailed to the user</p>
+                <p class="mt-0.5 text-[12.5px] text-[var(--muted)]">Kirim link undangan via email agar user bisa mendaftar sendiri</p>
             </div>
             <a href="{{ route('users.index') }}" class="btn-secondary">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -15,16 +15,10 @@
     </x-slot>
 
     <div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
-        <form action="{{ route('users.store') }}" method="POST" class="card space-y-5 p-6">
+        <form action="{{ route('invitations.store') }}" method="POST" class="card space-y-5 p-6">
             @csrf
 
             <div class="grid gap-5 sm:grid-cols-2">
-                <div>
-                    <label for="name" class="label">Name <span class="text-[var(--red-text)]">*</span></label>
-                    <input type="text" name="name" id="name" value="{{ old('name') }}" required placeholder="e.g. Sari Ningsih" class="input">
-                    <x-input-error :messages="$errors->get('name')" class="mt-1.5" />
-                </div>
-
                 <div>
                     <label for="email" class="label">Email <span class="text-[var(--red-text)]">*</span></label>
                     <input type="email" name="email" id="email" value="{{ old('email') }}" required placeholder="e.g. sari@ayyanet.id" class="input">
@@ -41,16 +35,16 @@
                     <x-input-error :messages="$errors->get('role')" class="mt-1.5" />
                 </div>
 
-                <div class="flex items-end pb-1.5">
+                <div class="flex items-end pb-1.5 sm:col-span-2">
                     <p class="text-[12px] leading-relaxed text-[var(--muted)]">
-                        A temporary password is generated automatically and sent to the user's email. They can change it from their Profile page.
+                        Sistem tidak akan langsung membuat akun. Sebuah link pendaftaran akan dikirim ke email di atas, dan user harus mengisikan nama serta password mereka sendiri. Link berlaku selama 5 jam.
                     </p>
                 </div>
             </div>
 
             <div class="flex items-center justify-end gap-3 border-t border-[var(--border)] pt-5">
                 <a href="{{ route('users.index') }}" class="btn-secondary">Cancel</a>
-                <button type="submit" class="btn-primary">Create & Invite</button>
+                <button type="submit" class="btn-primary">Kirim Undangan</button>
             </div>
         </form>
     </div>
