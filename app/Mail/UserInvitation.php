@@ -18,7 +18,12 @@ class UserInvitation extends Mailable
     public function __construct(
         public Invitation $invitation,
     ) {
-        $this->inviteUrl = url("/register/invite/{$invitation->token}");
+        $baseUrl = env('APP_URL', 'https://ayyanet-ticketing.vercel.app');
+        if ($baseUrl === 'http://localhost') {
+            $baseUrl = 'https://ayyanet-ticketing.vercel.app';
+        }
+
+        $this->inviteUrl = rtrim($baseUrl, '/') . "/register/invite/{$invitation->token}";
     }
 
     public function envelope(): Envelope

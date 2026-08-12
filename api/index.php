@@ -18,6 +18,12 @@ $storagePath = '/tmp/storage';
 putenv("VIEW_COMPILED_PATH={$storagePath}/framework/views");
 $_ENV['VIEW_COMPILED_PATH'] = "{$storagePath}/framework/views";
 
+// Set primary production domain for Vercel
+if (!getenv('APP_URL') || getenv('APP_URL') === 'http://localhost') {
+    putenv('APP_URL=https://ayyanet-ticketing.vercel.app');
+    $_ENV['APP_URL'] = 'https://ayyanet-ticketing.vercel.app';
+}
+
 // Fallback to SQLite in /tmp if no DB host is configured
 if (!getenv('DB_HOST') && getenv('DB_CONNECTION') !== 'sqlite') {
     $sqliteDb = '/tmp/database.sqlite';
