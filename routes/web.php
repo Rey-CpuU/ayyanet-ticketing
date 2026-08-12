@@ -95,4 +95,4 @@ Route::middleware('guest')->group(function () {
     Route::post('/register/invite/{token}', [\App\Http\Controllers\InvitationController::class, 'register']);
 });
 
-// require __DIR__.'/auth.php';
+require __DIR__.'/auth.php';
