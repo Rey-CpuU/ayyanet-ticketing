@@ -13,9 +13,13 @@ class UserInvitation extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public string $inviteUrl;
+
     public function __construct(
         public Invitation $invitation,
-    ) {}
+    ) {
+        $this->inviteUrl = url("/register/invite/{$invitation->token}");
+    }
 
     public function envelope(): Envelope
     {
@@ -28,6 +32,9 @@ class UserInvitation extends Mailable
     {
         return new Content(
             markdown: 'emails.user-invitation',
+            with: [
+                'inviteUrl' => $this->inviteUrl,
+            ],
         );
     }
 }

@@ -5,14 +5,14 @@ Anda telah diundang untuk bergabung dengan platform **Ayyanet Ticketing** sebaga
 
 Untuk melengkapi pendaftaran dan membuat password akun Anda, silakan klik tombol di bawah ini:
 
-<x-mail::button :url="route('register.invite', $invitation->token)">
+<x-mail::button :url="$inviteUrl">
 Buat Akun Anda
 </x-mail::button>
 
 *Link undangan ini hanya berlaku selama 5 jam sejak dikirimkan.*
 
 Jika tombol di atas tidak berfungsi, salin dan tempel URL berikut ke browser Anda:
-{{ route('register.invite', $invitation->token) }}
+{{ $inviteUrl }}
 
 Terima kasih,<br>
 **Tim Ayyanet**
