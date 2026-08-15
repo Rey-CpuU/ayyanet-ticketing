@@ -1,4 +1,15 @@
 <x-guest-layout>
+    <!-- Tabbed Navigation Header -->
+    <div class="mb-6 flex rounded-lg bg-[var(--surface-2)] p-1 border border-[var(--border)]">
+        <div class="flex-1 rounded-md bg-[var(--surface)] py-2 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm border border-[var(--border)]">
+            Log In
+        </div>
+        <div class="flex-1 rounded-md py-2 text-center text-sm font-medium text-[var(--muted)] opacity-70 flex items-center justify-center gap-1 cursor-default" title="Pendaftaran memerlukan link undangan email dari Admin">
+            Sign Up
+            <span class="text-[10px] bg-[var(--surface-3)] px-1.5 py-0.5 rounded text-[var(--muted)]">Undangan</span>
+        </div>
+    </div>
+
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 

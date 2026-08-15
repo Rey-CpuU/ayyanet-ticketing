@@ -7,18 +7,7 @@
     ])->values();
 @endphp
 
-<div
-    x-data="{
-        banners: @json($initialBanners),
-        async refresh() {
-            try {
-                const res = await fetch('/status-banners/active', { headers: { 'Accept': 'application/json' } });
-                if (res.ok) this.banners = await res.json();
-            } catch (e) {}
-        }
-    }"
-    x-init="refresh(); setInterval(() => refresh(), 60000)"
->
+<div x-data="statusBannerComponent()">
     <template x-for="banner in banners" :key="banner.id">
         <div
             class="border-b"
@@ -40,6 +29,10 @@
     </template>
 </div>
 
+<script id="status-banners-data" type="application/json">
+    {!! json_encode($initialBanners) !!}
+</script>
+
 <script>
     window.BANNER_STYLES = {
         outage:      { bg: 'var(--banner-outage-bg)',      border: 'var(--banner-outage-border)',      accent: 'var(--banner-outage-accent)',      muted: 'var(--banner-outage-muted)' },
@@ -47,4 +40,28 @@
         warning:     { bg: 'var(--banner-warning-bg)',     border: 'var(--banner-warning-border)',     accent: 'var(--banner-warning-accent)',     muted: 'var(--banner-warning-muted)' },
         info:        { bg: 'var(--banner-info-bg)',        border: 'var(--banner-info-border)',        accent: 'var(--banner-info-accent)',        muted: 'var(--banner-info-muted)' },
     };
+
+    function statusBannerComponent() {
+        let initial = [];
+        const el = document.getElementById('status-banners-data');
+        if (el) {
+            try {
+                initial = JSON.parse(el.textContent || '[]');
+            } catch (e) {}
+        }
+
+        return {
+            banners: initial,
+            init() {
+                this.refresh();
+                setInterval(() => this.refresh(), 60000);
+            },
+            async refresh() {
+                try {
+                    const res = await fetch('/status-banners/active', { headers: { 'Accept': 'application/json' } });
+                    if (res.ok) this.banners = await res.json();
+                } catch (e) {}
+            }
+        };
+    }
 </script>

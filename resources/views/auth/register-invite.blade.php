@@ -59,7 +59,7 @@
         <!-- Password -->
         <div>
             <x-input-label for="password" :value="__('Password Baru')" />
-            <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="new-password" placeholder="Minimal 8 karakter" />
+            <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="new-password" placeholder="Min. 8 karakter (huruf besar/kecil, angka & simbol)" />
             <x-input-error :messages="$errors->get('password')" class="mt-1.5" />
         </div>
 
@@ -72,7 +72,7 @@
 
         <div class="pt-2">
             <button type="submit" class="w-full btn-primary justify-center !py-2.5 text-sm font-bold tracking-wide">
-                DAFTAR AKUN SEKARANG
+                Daftar & Ke Halaman Login
             </button>
         </div>
     </form>

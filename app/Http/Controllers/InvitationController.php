@@ -11,20 +11,36 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 
+use Illuminate\Validation\Rules\Password;
+
 class InvitationController extends Controller
 {
     public function store(Request $request)
     {
         $request->validate([
-            'email' => ['required', 'email', 'unique:users,email', 'unique:invitations,email'],
+            'email' => ['required', 'email', 'unique:users,email'],
             'role'  => ['required', 'in:admin,cs,lapangan'],
         ]);
+
+        $existingInvitation = Invitation::where('email', $request->email)->first();
+
+        if ($existingInvitation && ! $existingInvitation->accepted_at) {
+            $existingInvitation->update([
+                'role'       => $request->role,
+                'token'      => Str::random(64),
+                'expires_at' => now()->addHours(24),
+            ]);
+
+            Mail::to($existingInvitation->email)->send(new UserInvitation($existingInvitation));
+
+            return back()->with('success', "Undangan dikirim ulang ke {$existingInvitation->email}");
+        }
 
         $invitation = Invitation::create([
             'email'      => $request->email,
             'role'       => $request->role,
-            'token'      => Str::random(32),
-            'expires_at' => now()->addHours(5),
+            'token'      => Str::random(64),
+            'expires_at' => now()->addHours(24),
             'created_by' => Auth::id(),
         ]);
 
@@ -40,8 +56,8 @@ class InvitationController extends Controller
         }
 
         $invitation->update([
-            'token'      => Str::random(32),
-            'expires_at' => now()->addHours(5),
+            'token'      => Str::random(64),
+            'expires_at' => now()->addHours(24),
         ]);
 
         Mail::to($invitation->email)->send(new UserInvitation($invitation));
@@ -70,7 +86,7 @@ class InvitationController extends Controller
 
         $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
         $user = User::create([
@@ -82,8 +98,6 @@ class InvitationController extends Controller
 
         $invitation->update(['accepted_at' => now()]);
 
-        Auth::login($user);
-
-        return redirect('/dashboard')->with('success', 'Selamat datang! Akun berhasil dibuat.');
+        return redirect()->route('login')->with('status', 'Pendaftaran akun berhasil! Silakan masuk menggunakan email dan password Anda.');
     }
 }

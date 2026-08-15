@@ -38,6 +38,8 @@
             <main class="relative z-10">
                 {{ $slot }}
             </main>
+
+            @include('partials.inactivity-modal')
         </div>
     </body>
 </html>
