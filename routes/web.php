@@ -16,21 +16,31 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
-    // Generate base stats independent of search/filter
-    $stats = [
-        'total'    => Ticket::count(),
-        'open'     => Ticket::where('status', 'Open')->count(),
-        'checking' => Ticket::where('status', 'Checking')->count(),
-        'waiting'  => Ticket::where('status', 'Waiting Customer')->count(),
-        'escalated' => Ticket::where('status', 'Escalated')->count(),
-        'solved'   => Ticket::where('status', 'Solved')->count(),
-        'closed'   => Ticket::where('status', 'Closed')->count(),
-        'unassigned' => Ticket::whereNull('assigned_to')->count(),
-        'mine'     => Ticket::where('assigned_to', auth()->id())->count(),
-        'critical' => Ticket::where('impact', 'Critical')->count(),
-    ];
+    $userId = \Illuminate\Support\Facades\Auth::id();
 
-    $query = Ticket::with(['customer', 'messages', 'assignee'])->latest();
+    // 1 query single aggregate for dashboard statistics
+    $rawStats = \Illuminate\Support\Facades\DB::table('tickets')
+        ->selectRaw("
+            COUNT(*) as total,
+            COUNT(CASE WHEN status = 'Open' THEN 1 END) as open,
+            COUNT(CASE WHEN status = 'Checking' THEN 1 END) as checking,
+            COUNT(CASE WHEN status = 'Waiting Customer' THEN 1 END) as waiting,
+            COUNT(CASE WHEN status = 'Escalated' THEN 1 END) as escalated,
+            COUNT(CASE WHEN status = 'Solved' THEN 1 END) as solved,
+            COUNT(CASE WHEN status = 'Closed' THEN 1 END) as closed,
+            COUNT(CASE WHEN assigned_to IS NULL THEN 1 END) as unassigned,
+            COUNT(CASE WHEN assigned_to = ? THEN 1 END) as mine,
+            COUNT(CASE WHEN priority = 'High' THEN 1 END) as high
+        ", [$userId])
+        ->first();
+
+    $stats = (array) $rawStats;
+
+    // Streamlined eager loading ordered by most recently visited/clicked
+    $query = Ticket::with([
+        'customer:id,name,customer_id,phone,address',
+        'assignee:id,name,email,role'
+    ])->orderByRaw('COALESCE(last_visited_at, updated_at, created_at) DESC');
 
     if ($request->filled('search')) {
         $search = $request->search;
@@ -50,13 +60,24 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
 
     $tickets = $query->paginate(15)->withQueryString();
 
-    $assignableUsers = User::whereNotNull('role')->orderBy('name')->get();
-    $uniqueCustomers = Customer::orderBy('name')->get();
+    // Dedicated query for the "Recently Visited" panel — global top 5 by
+    // last_visited_at, independent of the paginated $tickets collection.
+    $latestTickets = Ticket::with([
+        'customer:id,name,customer_id',
+        'assignee:id,name',
+    ])
+        ->orderByRaw('COALESCE(last_visited_at, created_at) DESC')
+        ->limit(5)
+        ->get();
 
-    return view('dashboard', compact('tickets', 'stats', 'assignableUsers', 'uniqueCustomers'));
+    $assignableUsers = User::select('id', 'name', 'role')->whereNotNull('role')->orderBy('name')->get();
+    $uniqueCustomers = Customer::select('id', 'name')->orderBy('name')->get();
+
+    return view('dashboard', compact('tickets', 'stats', 'assignableUsers', 'uniqueCustomers', 'latestTickets'));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// --- TARUH DI SINI (LUAR AUTH) UNTUK SEMENTARA ---
+// --- Live search & classify ---
+Route::get('tickets/live-search', [TicketController::class, 'liveSearch'])->name('tickets.live-search');
 Route::post('tickets/classify', [TicketController::class, 'classify'])->name('tickets.classify');
 Route::resource('tickets', TicketController::class);
 Route::resource('customers', CustomerController::class); // if need to manage customers
@@ -67,6 +88,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('tickets/{ticket}/messages', [TicketMessageController::class, 'store'])->name('tickets.messages.store');
+    Route::get('tickets/{ticket}/quick-details', [TicketController::class, 'quickDetails'])->name('tickets.quick-details');
+    Route::post('tickets/{ticket}/quick-message', [TicketMessageController::class, 'quickStore'])->name('tickets.quick-message');
     Route::patch('tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.update-status');
     Route::patch('tickets/{ticket}/assignee', [TicketController::class, 'assign'])->name('tickets.assign');
 
