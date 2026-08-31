@@ -17,6 +17,17 @@ class UserController extends Controller
         $users = User::withCount('createdTickets')->latest()->get();
         $invitations = Invitation::whereNull('accepted_at')->latest()->get();
 
+        if (request()->wantsJson()) {
+            return response()->json($users->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'role' => $user->role,
+                    'email' => $user->email,
+                ];
+            }));
+        }
+
         return view('users.index', compact('users', 'invitations'));
     }
 
@@ -25,7 +36,25 @@ class UserController extends Controller
         return view('users.create');
     }
 
-    // store is now handled by InvitationController
+    public function store(Request $request)
+    {
+        $request->validate([
+            'email' => ['required', 'email', 'unique:users,email'],
+            'role'  => ['required', 'in:' . implode(',', self::ROLES)],
+        ]);
+
+        $invitation = \App\Models\Invitation::create([
+            'email'      => $request->email,
+            'role'       => $request->role,
+            'token'      => Str::random(64),
+            'expires_at' => now()->addHours(24),
+            'created_by' => \Illuminate\Support\Facades\Auth::id(),
+        ]);
+
+        \Illuminate\Support\Facades\Mail::to($invitation->email)->send(new \App\Mail\UserInvitation($invitation));
+
+        return redirect()->route('users.index')->with('success', "Undangan dikirim ke {$invitation->email}");
+    }
 
     public function edit(User $user)
     {

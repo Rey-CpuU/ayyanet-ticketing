@@ -33,7 +33,7 @@ class InvitationController extends Controller
 
             Mail::to($existingInvitation->email)->send(new UserInvitation($existingInvitation));
 
-            return back()->with('success', "Undangan dikirim ulang ke {$existingInvitation->email}");
+            return back()->with('success', 'Undangan dikirim ulang ke alamat email yang terdaftar.');
         }
 
         $invitation = Invitation::create([
@@ -46,7 +46,7 @@ class InvitationController extends Controller
 
         Mail::to($invitation->email)->send(new UserInvitation($invitation));
 
-        return back()->with('success', "Undangan dikirim ke {$invitation->email}");
+        return back()->with('success', 'Undangan dikirim ke alamat email yang terdaftar.');
     }
 
     public function resend(Invitation $invitation)
@@ -62,7 +62,7 @@ class InvitationController extends Controller
 
         Mail::to($invitation->email)->send(new UserInvitation($invitation));
 
-        return back()->with('success', "Undangan dikirim ulang ke {$invitation->email}");
+        return back()->with('success', 'Undangan dikirim ulang ke alamat email yang terdaftar.');
     }
 
     public function show(string $token)

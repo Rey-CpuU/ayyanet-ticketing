@@ -19,10 +19,12 @@ class SendLockoutAlert
         $ip = $event->request->ip();
         $time = now()->toDateTimeString();
 
-        Log::warning("SECURITY ALERT: Repeated failed login attempts causing lockout.", [
-            'email' => $email,
-            'ip'    => $ip,
-            'time'  => $time,
+        // Log only a hashed, non-reversible reference so the security event is
+        // auditable without writing raw PII (email / IP) to the log files.
+        Log::warning('SECURITY ALERT: Repeated failed login attempts causing lockout.', [
+            'email_hash' => hash('sha256', $email ?? ''),
+            'ip_hash'    => hash('sha256', $ip ?? ''),
+            'time'       => $time,
         ]);
 
         if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -32,7 +34,13 @@ class SendLockoutAlert
                 try {
                     Mail::to($email)->send(new SuspiciousLoginAlert($email, $ip, $time));
                 } catch (\Throwable $e) {
-                    Log::error("Failed to send suspicious login alert email: " . $e->getMessage());
+                    // Avoid leaking driver config / stack traces into the log;
+                    // report a generic class-only message instead.
+                    report($e);
+                    Log::error('Failed to send suspicious login alert email.', [
+                        'exception' => get_class($e),
+                        'email_hash' => hash('sha256', $email),
+                    ]);
                 }
             }
         }

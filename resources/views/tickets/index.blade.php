@@ -21,61 +21,147 @@
             </div>
         @endif
 
-        <div class="card card-3d overflow-hidden rounded-lg" x-data="{ search: '', status: '', priority: '', impact: '', assignee: '', customer: '' }">
+        <div class="card card-3d overflow-hidden rounded-lg" x-data="{ search: '', status: '', priority: '', assignee: '', customer: '' }">
             {{-- Filter bar --}}
             <div class="border-b border-[var(--border)] bg-[var(--surface-3)] px-4 py-3 sm:px-5">
                 <div class="flex flex-wrap items-center gap-2">
                     <div class="min-w-[160px] flex-1">
-                        <input type="text" x-model="search" placeholder="Search title or number..."
+                        <input type="text" id="ticket_search" name="search" aria-label="Search title or number" x-model="search" placeholder="Search title or number..."
                                class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2.5 py-1 text-[11.5px] text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--accent)] focus:outline-none" />
                     </div>
-                    <div class="w-full sm:w-auto">
-                        <select x-model="status" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
-                            <option value="">All Statuses</option>
-                            <option value="Open">Open</option>
-                            <option value="Checking">Checking</option>
-                            <option value="Waiting Customer">Waiting Customer</option>
-                            <option value="Escalated">Escalated</option>
-                            <option value="Solved">Solved</option>
-                            <option value="Closed">Closed</option>
-                        </select>
+                    {{-- Status Dropdown --}}
+                    <div class="relative w-full sm:w-auto" x-data="{ open: false }" @click.outside="open = false">
+                        <button type="button" @click="open = !open"
+                                class="flex w-full items-center justify-between gap-2.5 rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--surface-3)] focus:border-[var(--accent)] focus:outline-none sm:w-auto min-w-[125px]">
+                            <span class="truncate" x-text="status ? status : 'All Statuses'">All Statuses</span>
+                            <svg class="h-3.5 w-3.5 shrink-0 text-[var(--muted)] transition-transform duration-200" :class="{ 'rotate-180 text-[var(--accent)]': open }" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <div x-show="open" x-cloak
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+                             class="absolute left-0 top-full z-50 mt-1.5 w-44 overflow-hidden rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] shadow-2xl backdrop-blur-md py-1">
+                            <template x-for="opt in ['', 'Open', 'Checking', 'Waiting Customer', 'Escalated', 'Solved', 'Closed']" :key="opt">
+                                <button type="button" @click="status = opt; open = false"
+                                        class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
+                                        :class="status === opt ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
+                                    <span x-text="opt ? opt : 'All Statuses'"></span>
+                                    <span x-show="status === opt" class="text-[var(--accent)] shrink-0">✓</span>
+                                </button>
+                            </template>
+                        </div>
                     </div>
-                    <div class="w-full sm:w-auto">
-                        <select x-model="priority" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
-                            <option value="">All Priorities</option>
-                            <option value="High">High</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Low">Low</option>
-                        </select>
+
+                    {{-- Priority Dropdown --}}
+                    <div class="relative w-full sm:w-auto" x-data="{ open: false }" @click.outside="open = false">
+                        <button type="button" @click="open = !open"
+                                class="flex w-full items-center justify-between gap-2.5 rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--surface-3)] focus:border-[var(--accent)] focus:outline-none sm:w-auto min-w-[125px]">
+                            <span class="truncate" x-text="priority ? priority : 'All Priorities'">All Priorities</span>
+                            <svg class="h-3.5 w-3.5 shrink-0 text-[var(--muted)] transition-transform duration-200" :class="{ 'rotate-180 text-[var(--accent)]': open }" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <div x-show="open" x-cloak
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+                             class="absolute left-0 top-full z-50 mt-1.5 w-40 overflow-hidden rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] shadow-2xl backdrop-blur-md py-1">
+                            <template x-for="opt in ['', 'High', 'Medium', 'Low']" :key="opt">
+                                <button type="button" @click="priority = opt; open = false"
+                                        class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
+                                        :class="priority === opt ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
+                                    <span x-text="opt ? opt : 'All Priorities'"></span>
+                                    <span x-show="priority === opt" class="text-[var(--accent)] shrink-0">✓</span>
+                                </button>
+                            </template>
+                        </div>
                     </div>
-                    <div class="w-full sm:w-auto">
-                        <select x-model="impact" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
-                            <option value="">All Impacts</option>
-                            <option value="Critical">Critical</option>
-                            <option value="High">High</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Low">Low</option>
-                        </select>
-                    </div>
-                    <div class="w-full sm:w-auto">
-                        <select x-model="assignee" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
-                            <option value="">All Assignees</option>
-                            <option value="unassigned">Unassigned</option>
+                    {{-- Assignee Dropdown --}}
+                    <div class="relative w-full sm:w-auto" x-data="{ open: false }" @click.outside="open = false">
+                        <button type="button" @click="open = !open"
+                                class="flex w-full items-center justify-between gap-2.5 rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--surface-3)] focus:border-[var(--accent)] focus:outline-none sm:w-auto min-w-[130px]">
+                            <span class="truncate" x-text="assignee ? (assignee === 'unassigned' ? 'Unassigned' : document.querySelector(`[data-agent-id='${assignee}']`)?.dataset?.agentName || 'Assignee') : 'All Assignees'">All Assignees</span>
+                            <svg class="h-3.5 w-3.5 shrink-0 text-[var(--muted)] transition-transform duration-200" :class="{ 'rotate-180 text-[var(--accent)]': open }" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <div x-show="open" x-cloak
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+                             class="absolute left-0 top-full z-50 mt-1.5 w-48 max-h-60 overflow-y-auto rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] shadow-2xl backdrop-blur-md py-1 divide-y divide-[var(--border-60)]">
+                            <button type="button" @click="assignee = ''; open = false"
+                                    class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
+                                    :class="assignee === '' ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
+                                <span>All Assignees</span>
+                                <span x-show="assignee === ''" class="text-[var(--accent)] shrink-0">✓</span>
+                            </button>
+                            <button type="button" @click="assignee = 'unassigned'; open = false"
+                                    class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
+                                    :class="assignee === 'unassigned' ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
+                                <span>Unassigned</span>
+                                <span x-show="assignee === 'unassigned'" class="text-[var(--accent)] shrink-0">✓</span>
+                            </button>
                             @foreach ($assignableUsers as $agent)
-                                <option value="{{ $agent->id }}">{{ $agent->name }}</option>
+                                <button type="button" @click="assignee = '{{ $agent->id }}'; open = false"
+                                        data-agent-id="{{ $agent->id }}" data-agent-name="{{ $agent->name }}"
+                                        class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
+                                        :class="assignee === '{{ $agent->id }}' ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
+                                    <span class="truncate">{{ $agent->name }}</span>
+                                    <span x-show="assignee === '{{ $agent->id }}'" class="text-[var(--accent)] shrink-0">✓</span>
+                                </button>
                             @endforeach
-                        </select>
+                        </div>
                     </div>
-                    <div class="w-full sm:w-auto">
-                        <select x-model="customer" class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-1 text-[11.5px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none">
-                            <option value="">All Customers</option>
+
+                    {{-- Customer Dropdown --}}
+                    <div class="relative w-full sm:w-auto" x-data="{ open: false }" @click.outside="open = false">
+                        <button type="button" @click="open = !open"
+                                class="flex w-full items-center justify-between gap-2.5 rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--surface-3)] focus:border-[var(--accent)] focus:outline-none sm:w-auto min-w-[130px]">
+                            <span class="truncate" x-text="customer ? (document.querySelector(`[data-cust-id='${customer}']`)?.dataset?.custName || 'Customer') : 'All Customers'">All Customers</span>
+                            <svg class="h-3.5 w-3.5 shrink-0 text-[var(--muted)] transition-transform duration-200" :class="{ 'rotate-180 text-[var(--accent)]': open }" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <div x-show="open" x-cloak
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+                             class="absolute left-0 top-full z-50 mt-1.5 w-52 max-h-60 overflow-y-auto rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] shadow-2xl backdrop-blur-md py-1 divide-y divide-[var(--border-60)]">
+                            <button type="button" @click="customer = ''; open = false"
+                                    class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
+                                    :class="customer === '' ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
+                                <span>All Customers</span>
+                                <span x-show="customer === ''" class="text-[var(--accent)] shrink-0">✓</span>
+                            </button>
                             @foreach ($uniqueCustomers as $cust)
-                                <option value="{{ $cust->id }}">{{ $cust->name }}</option>
+                                <button type="button" @click="customer = '{{ $cust->id }}'; open = false"
+                                        data-cust-id="{{ $cust->id }}" data-cust-name="{{ $cust->name }}"
+                                        class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
+                                        :class="customer === '{{ $cust->id }}' ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
+                                    <span class="truncate">{{ $cust->name }}</span>
+                                    <span x-show="customer === '{{ $cust->id }}'" class="text-[var(--accent)] shrink-0">✓</span>
+                                </button>
                             @endforeach
-                        </select>
+                        </div>
                     </div>
-                    <button type="button" @click="search = ''; status = ''; priority = ''; impact = ''; assignee = ''; customer = ''"
-                            x-show="search !== '' || status !== '' || priority !== '' || impact !== '' || assignee !== '' || customer !== ''"
+
+                    <button type="button" @click="search = ''; status = ''; priority = ''; assignee = ''; customer = ''"
+                            x-show="search !== '' || status !== '' || priority !== '' || assignee !== '' || customer !== ''"
                             class="text-[11.5px] font-semibold text-[var(--accent)] hover:text-[var(--accent-text)] transition" x-cloak>
                         Clear
                     </button>
@@ -89,7 +175,6 @@
                             <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Ticket</th>
                             <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Customer</th>
                             <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Priority</th>
-                            <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Impact</th>
                             <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Status</th>
                             <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Assignee</th>
                             <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Messages</th>
@@ -104,14 +189,6 @@
                                     'Medium' => 'var(--blue-text)',
                                     default => 'var(--muted)',
                                 };
-                                $impact = $ticket->impact ?? 'Medium';
-                                $impactBadge = [
-                                    'Critical' => ['bg' => 'color-mix(in srgb, var(--red-text) 14%, transparent)', 'text' => 'var(--red-text)', 'glow' => 'var(--red-glow)'],
-                                    'High'     => ['bg' => 'color-mix(in srgb, var(--amber-text) 13%, transparent)', 'text' => 'var(--amber-text)', 'glow' => 'var(--amber-glow)'],
-                                    'Medium'   => ['bg' => 'color-mix(in srgb, var(--blue-text) 13%, transparent)', 'text' => 'var(--blue-text)', 'glow' => 'var(--blue-glow)'],
-                                    'Low'      => ['bg' => 'color-mix(in srgb, var(--slate-text) 14%, transparent)', 'text' => 'var(--slate-text)', 'glow' => 'none'],
-                                ];
-                                $imp = $impactBadge[$impact] ?? $impactBadge['Medium'];
                                 $statusBadge = match ($ticket->status) {
                                     'Open' => ['bg' => 'color-mix(in srgb, var(--red-text) 12%, transparent)', 'text' => 'var(--red-text)'],
                                     'Checking' => ['bg' => 'color-mix(in srgb, var(--violet-text) 15%, transparent)', 'text' => 'var(--violet-text)'],
@@ -122,10 +199,15 @@
                                 };
                             @endphp
                             <tr class="transition hover:bg-[var(--hover-overlay)]"
-                                x-show="(search === '' || '{{ strtolower(addslashes($ticket->title)) }}'.includes(search.toLowerCase()) || '{{ strtolower($ticket->ticket_number) }}'.includes(search.toLowerCase())) &&
+                                x-show="(search === '' || 
+                                         '{{ strtolower(addslashes($ticket->title)) }}'.includes(search.toLowerCase()) || 
+                                         '{{ strtolower($ticket->ticket_number) }}'.includes(search.toLowerCase()) ||
+                                         '{{ strtolower(addslashes($ticket->customer->name ?? '')) }}'.includes(search.toLowerCase()) ||
+                                         '{{ strtolower($ticket->customer->phone ?? '') }}'.includes(search.toLowerCase()) ||
+                                         '{{ strtolower($ticket->customer->customer_id ?? '') }}'.includes(search.toLowerCase()) ||
+                                         '{{ strtolower($ticket->category ?? '') }}'.includes(search.toLowerCase())) &&
                                         (status === '' || '{{ $ticket->status }}' === status) &&
                                         (priority === '' || '{{ $ticket->priority }}' === priority) &&
-                                        (impact === '' || '{{ $ticket->impact ?? 'Medium' }}' === impact) &&
                                         (assignee === '' || (assignee === 'unassigned' ? {{ $ticket->assigned_to === null ? 'true' : 'false' }} : '{{ $ticket->assigned_to }}' === assignee)) &&
                                         (customer === '' || '{{ $ticket->customer_id }}' === customer)"
                                 x-cloak>
@@ -144,9 +226,6 @@
                                         <span class="h-1.5 w-1.5 rounded-full" style="background: {{ $priorityColor }}"></span>
                                         <span class="font-mono uppercase tracking-[0.04em]" style="color: {{ $priorityColor }}">{{ $ticket->priority }}</span>
                                     </span>
-                                </td>
-                                <td class="px-5 py-4">
-                                    <span class="badge" style="background: {{ $imp['bg'] }}; color: {{ $imp['text'] }}; box-shadow: {{ $imp['glow'] }};">{{ $impact }}</span>
                                 </td>
                                 <td class="px-5 py-4">
                                     <span class="badge" style="background: {{ $statusBadge['bg'] }}; color: {{ $statusBadge['text'] }};">{{ $ticket->status }}</span>

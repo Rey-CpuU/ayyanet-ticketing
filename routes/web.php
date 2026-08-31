@@ -6,10 +6,14 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\TicketMessageController;
 use App\Http\Controllers\StatusBannerController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\TelegramWebhookController;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Models\Customer;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class]);
 
 Route::get('/', function () {
     return redirect()->route('login');

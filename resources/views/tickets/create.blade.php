@@ -34,14 +34,12 @@
             <div class="grid gap-5 sm:grid-cols-2">
                 <div class="sm:col-span-2">
                     <label for="customer_id" class="label">Customer <span class="text-[var(--red-text)]">*</span></label>
-                    <select name="customer_id" id="customer_id" required class="input">
-                        <option value="" disabled selected>Select customer…</option>
-                        @foreach ($customers as $customer)
-                            <option value="{{ $customer->id }}" @selected(old('customer_id') == $customer->id)>
-                                {{ $customer->name }} — {{ $customer->phone }} ({{ $customer->package ?? 'no package' }})
-                            </option>
-                        @endforeach
-                    </select>
+                    <x-custom-select
+                        name="customer_id"
+                        id="customer_id"
+                        :value="old('customer_id', '')"
+                        placeholder="Select customer…"
+                        :options="$customers->mapWithKeys(fn($c) => [$c->id => $c->name . ' — ' . $c->phone . ' (' . ($c->package ?? 'no package') . ')'])->toArray()" />
                     <x-input-error :messages="$errors->get('customer_id')" class="mt-1.5" />
                 </div>
 
@@ -59,31 +57,31 @@
 
                 <div>
                     <label for="category" class="label">Category</label>
-                    <select name="category" id="category" class="input" x-on:change="manual = true">
-                        <option value="" @selected(old('category') === null)>— Select —</option>
-                        @foreach (['Internet', 'Hardware', 'Billing', 'Layanan', 'Other'] as $cat)
-                            <option value="{{ $cat }}" @selected(old('category') === $cat)>{{ $cat }}</option>
-                        @endforeach
-                    </select>
+                    <x-custom-select
+                        name="category"
+                        id="category"
+                        :value="old('category', '')"
+                        placeholder="— Select —"
+                        :options="[
+                            'Internet' => 'Internet',
+                            'Hardware' => 'Hardware',
+                            'Billing' => 'Billing',
+                            'Layanan' => 'Layanan',
+                            'Other' => 'Other'
+                        ]" />
                 </div>
 
                 <div>
                     <label for="priority" class="label">Priority</label>
-                    <select name="priority" id="priority" class="input" x-on:change="manual = true">
-                        @foreach (['Low', 'Medium', 'High'] as $prio)
-                            <option value="{{ $prio }}" @selected(old('priority', 'Medium') === $prio)>{{ $prio }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label for="impact" class="label">Operational Impact</label>
-                    <select name="impact" id="impact" class="input" x-on:change="manual = true">
-                        @foreach (['Low', 'Medium', 'High', 'Critical'] as $imp)
-                            <option value="{{ $imp }}" @selected(old('impact', 'Medium') === $imp)>{{ $imp }}</option>
-                        @endforeach
-                    </select>
-                    <p class="mt-1.5 text-[11px] text-[var(--muted-strong)]">How badly does this affect operations?</p>
+                    <x-custom-select
+                        name="priority"
+                        id="priority"
+                        :value="old('priority', 'Medium')"
+                        :options="[
+                            'Low' => 'Low',
+                            'Medium' => 'Medium',
+                            'High' => 'High'
+                        ]" />
                 </div>
 
                 <div class="sm:col-span-2" x-show="detected" x-cloak>
@@ -96,8 +94,6 @@
                             <span class="font-semibold" x-text="detected.category"></span>
                             <span class="mx-1 text-[var(--muted)]">·</span>
                             <span class="font-semibold" x-text="detected.priority"></span>
-                            <span class="mx-1 text-[var(--muted)]">·</span>
-                            <span class="font-semibold" x-text="detected.impact"></span>
                             <span class="text-[var(--muted)]">— auto-filled, you can adjust below</span>
                         </p>
                     </div>
@@ -154,7 +150,6 @@
                         if (!this.manual) {
                             document.getElementById('category').value = data.category;
                             document.getElementById('priority').value = data.priority;
-                            document.getElementById('impact').value = data.impact;
                         }
                     } catch (e) {}
                 },

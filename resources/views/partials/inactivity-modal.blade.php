@@ -58,9 +58,13 @@
                 this.timer = setInterval(() => this.checkIdle(), 1000);
             },
 
+            lastActivityReset: 0,
+
             resetActivity() {
-                if (!this.showWarning) {
+                const now = Date.now();
+                if (!this.showWarning && (now - this.lastActivityReset > 2000)) {
                     this.idleTime = 0;
+                    this.lastActivityReset = now;
                 }
             },
 

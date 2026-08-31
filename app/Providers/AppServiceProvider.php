@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Database\Connectors\NeonPostgresConnector;
 use Illuminate\Support\ServiceProvider;
 
+use App\Models\Ticket;
+use App\Observers\TicketObserver;
 use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,6 +24,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register Ticket Eloquent Observer for instant Telegram notifications
+        Ticket::observe(TicketObserver::class);
         // Enforce strong password policy globally
         Password::defaults(function () {
             $rule = Password::min(8)

@@ -79,7 +79,79 @@
 
         {{-- Ticket queue + side panel --}}
         <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
-            <div class="card overflow-hidden rounded-lg" x-data="{ tab: 'unassigned', search: '', status: '', priority: '', assignee: '', customer: '' }">
+            <div class="card overflow-hidden rounded-lg"
+                x-data="{
+                    tab: localStorage.getItem('ayyanet_ticket_queue_tab') || 'unassigned',
+                    setTab(t) {
+                        this.tab = t;
+                        localStorage.setItem('ayyanet_ticket_queue_tab', t);
+                    },
+                    unassignedCount: {{ (int) $stats['unassigned'] }},
+                    mineCount: {{ (int) $stats['mine'] }},
+                    allCount: {{ (int) $tickets->count() }},
+                    currentUserId: {{ (int) auth()->id() }},
+                    search: '',
+                    status: '',
+                    priority: '',
+                    assignee: '',
+                    customer: '',
+                    async assignTicket(ticketId, selectEl, rowData) {
+                        const newAssigneeId = selectEl.value;
+                        const oldAssigneeId = selectEl.dataset.currentAssignee || '';
+
+                        // Immediate visual feedback
+                        if (!newAssigneeId) {
+                            selectEl.className = 'select-chip inline-flex items-center gap-1.5 rounded-full border text-[13px] font-semibold transition border-dashed border-[var(--amber-text-50)] bg-[var(--amber-text-06)] text-[var(--amber-text)] fx-unassigned-pulse';
+                        } else {
+                            selectEl.className = 'select-chip inline-flex items-center gap-1.5 rounded-full border text-[13px] font-semibold transition border-[var(--border-strong)] bg-[var(--surface-3)] text-[var(--foreground)]';
+                        }
+
+                        try {
+                            const res = await fetch(`/tickets/${ticketId}/assignee`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').content,
+                                },
+                                body: JSON.stringify({ assigned_to: newAssigneeId ? parseInt(newAssigneeId) : null }),
+                            });
+
+                            if (res.ok) {
+                                selectEl.dataset.currentAssignee = newAssigneeId;
+
+                                let newTabKey = 'all';
+                                if (!newAssigneeId) {
+                                    newTabKey = 'unassigned';
+                                } else if (parseInt(newAssigneeId) === this.currentUserId) {
+                                    newTabKey = 'mine';
+                                }
+
+                                if (rowData) {
+                                    rowData.rowTabKey = newTabKey;
+                                }
+
+                                // Update counters
+                                if (!oldAssigneeId && newAssigneeId) {
+                                    this.unassignedCount = Math.max(0, this.unassignedCount - 1);
+                                } else if (oldAssigneeId && !newAssigneeId) {
+                                    this.unassignedCount++;
+                                }
+
+                                if (oldAssigneeId && parseInt(oldAssigneeId) === this.currentUserId && parseInt(newAssigneeId) !== this.currentUserId) {
+                                    this.mineCount = Math.max(0, this.mineCount - 1);
+                                } else if ((!oldAssigneeId || parseInt(oldAssigneeId) !== this.currentUserId) && parseInt(newAssigneeId) === this.currentUserId) {
+                                    this.mineCount++;
+                                }
+                            } else {
+                                selectEl.value = oldAssigneeId;
+                            }
+                        } catch (e) {
+                            console.error('Failed to assign ticket:', e);
+                            selectEl.value = oldAssigneeId;
+                        }
+                    }
+                }">
                 <div class="flex flex-col gap-3 border-b border-[var(--border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                     <div class="flex items-center gap-2.5">
                         <h3 class="font-display text-[14px] font-bold tracking-[-0.01em] text-[var(--foreground)]">Ticket Queue</h3>
@@ -97,23 +169,23 @@
                             aria-hidden="true">
                         </div>
 
-                        <button type="button" x-ref="tabUnassigned" @click="tab = 'unassigned'"
+                        <button type="button" x-ref="tabUnassigned" @click="setTab('unassigned')"
                             :class="tab === 'unassigned' ? 'text-white' : 'text-[var(--muted)] hover:text-[var(--foreground)]'"
                             class="relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors duration-200">
                             Unassigned
-                            <span class="font-mono text-[10.5px] opacity-80">{{ $stats['unassigned'] }}</span>
+                            <span class="font-mono text-[10.5px] opacity-80" x-text="unassignedCount">{{ $stats['unassigned'] }}</span>
                         </button>
-                        <button type="button" x-ref="tabMine" @click="tab = 'mine'"
+                        <button type="button" x-ref="tabMine" @click="setTab('mine')"
                             :class="tab === 'mine' ? 'text-white' : 'text-[var(--muted)] hover:text-[var(--foreground)]'"
                             class="relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors duration-200">
                             Mine
-                            <span class="font-mono text-[10.5px] opacity-80">{{ $stats['mine'] }}</span>
+                            <span class="font-mono text-[10.5px] opacity-80" x-text="mineCount">{{ $stats['mine'] }}</span>
                         </button>
-                        <button type="button" x-ref="tabAll" @click="tab = 'all'"
+                        <button type="button" x-ref="tabAll" @click="setTab('all')"
                             :class="tab === 'all' ? 'text-white' : 'text-[var(--muted)] hover:text-[var(--foreground)]'"
                             class="relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors duration-200">
                             All
-                            <span class="font-mono text-[10.5px] opacity-80">{{ $tickets->count() }}</span>
+                            <span class="font-mono text-[10.5px] opacity-80" x-text="allCount">{{ $tickets->count() }}</span>
                         </button>
                     </div>
                 </div>
@@ -294,7 +366,42 @@
                     : ($ticket->assigned_to === auth()->id() ? 'mine' : 'all');
                     @endphp
                     <div class="ticket-row-interactive border-b border-[var(--border)] px-4 py-3.5 sm:px-5"
-                        x-show="tab === 'all' || tab === '{{ $tabKey }}'"
+                        x-data="{
+                            rowTabKey: '{{ $tabKey }}',
+                            rowStatus: '{{ $ticket->status }}',
+                            rowTitle: '{{ addslashes($ticket->title) }}',
+                            rowPriority: '{{ $ticket->priority }}',
+                            rowCategory: '{{ addslashes($ticket->category ?? '') }}',
+                            getStatusBadgeClass(st) {
+                                switch(st) {
+                                    case 'Open': return 'badge-red';
+                                    case 'Checking': return 'badge-violet';
+                                    case 'Waiting Customer': return 'badge-amber';
+                                    case 'Escalated': return 'badge-orange';
+                                    case 'Solved': return 'badge-green';
+                                    default: return 'badge-slate';
+                                }
+                            },
+                            getPriorityClass(prio) {
+                                if (prio === 'High') return 'priority-high';
+                                if (prio === 'Medium') return 'priority-medium';
+                                return 'priority-default';
+                            },
+                            getPriorityDotClass(prio) {
+                                if (prio === 'High') return 'priority-dot-high';
+                                if (prio === 'Medium') return 'priority-dot-medium';
+                                return 'priority-dot-default';
+                            }
+                        }"
+                        @ticket-updated.window="
+                            if ($event.detail.id === {{ $ticket->id }}) {
+                                if ($event.detail.status) rowStatus = $event.detail.status;
+                                if ($event.detail.title) rowTitle = $event.detail.title;
+                                if ($event.detail.priority) rowPriority = $event.detail.priority;
+                                if ($event.detail.category) rowCategory = $event.detail.category;
+                            }
+                        "
+                        x-show="tab === 'all' || tab === rowTabKey"
                         x-cloak>
                         <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
                             <div class="flex min-w-0 flex-1 items-center gap-3">
@@ -302,7 +409,7 @@
                                     {{ strtoupper(substr($ticket->customer->name ?? '?', 0, 2)) }}
                                 </div>
                                 <div class="min-w-0">
-                                    <button type="button" @click="$dispatch('open-ticket-modal', { ticketId: {{ $ticket->id }} })" class="ticket-title-link block truncate text-left text-[13.5px] font-medium text-[var(--foreground)] transition-colors duration-200">{{ $ticket->title }}</button>
+                                    <button type="button" @click="$dispatch('open-ticket-modal', { ticketId: {{ $ticket->id }} })" class="ticket-title-link block truncate text-left text-[13.5px] font-medium text-[var(--foreground)] transition-colors duration-200" x-text="rowTitle">{{ $ticket->title }}</button>
 
                                     {{-- Customer + assignee tag --}}
                                     <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11.5px] text-[var(--muted)]">
@@ -310,10 +417,10 @@
                                         <span class="font-mono text-[10.5px]">{{ $ticket->ticket_number }}</span>
                                         <span class="text-[var(--border-strong)]">·</span>
 
-                                        <form method="POST" action="{{ route('tickets.assign', $ticket) }}" class="inline-flex">
-                                            @csrf
-                                            @method('PATCH')
-                                            <select name="assigned_to" onchange="this.form.submit()"
+                                        <div class="inline-flex">
+                                            <select name="assigned_to"
+                                                data-current-assignee="{{ $ticket->assigned_to ?? '' }}"
+                                                @change="assignTicket({{ $ticket->id }}, $el, $data)"
                                                 class="select-chip inline-flex items-center gap-1.5 rounded-full border text-[13px] font-semibold transition
                                                         {{ $ticket->assigned_to === null
                                                             ? 'border-dashed border-[var(--amber-text-50)] bg-[var(--amber-text-06)] text-[var(--amber-text)] fx-unassigned-pulse'
@@ -323,45 +430,27 @@
                                                 <option value="{{ $agent->id }}" @selected($ticket->assigned_to === $agent->id)>{{ $agent->name }}</option>
                                                 @endforeach
                                             </select>
-                                        </form>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            @php
-                                $priorityClass = match ($priority) {
-                                    'High' => 'priority-high',
-                                    'Medium' => 'priority-medium',
-                                    default => 'priority-default',
-                                };
-                                $priorityDotClass = match ($priority) {
-                                    'High' => 'priority-dot-high',
-                                    'Medium' => 'priority-dot-medium',
-                                    default => 'priority-dot-default',
-                                };
-                                $statusBadgeClass = match ($status) {
-                                    'Open' => 'badge-red',
-                                    'Checking' => 'badge-violet',
-                                    'Waiting Customer' => 'badge-amber',
-                                    'Escalated' => 'badge-orange',
-                                    'Solved' => 'badge-green',
-                                    default => 'badge-slate',
-                                };
-                            @endphp
                             <div class="flex shrink-0 flex-wrap items-center gap-1.5">
-                                <span class="badge {{ $statusBadgeClass }}">{{ $status }}</span>
+                                <span class="badge" :class="getStatusBadgeClass(rowStatus)" x-text="rowStatus">{{ $status }}</span>
                             </div>
                         </div>
 
                         <div class="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px]">
                             <span class="flex items-center gap-1.5">
-                                <span class="h-1.5 w-1.5 rounded-full {{ $priorityDotClass }}"></span>
-                                <span class="font-mono uppercase tracking-[0.04em] {{ $priorityClass }}">{{ $priority }}</span>
+                                <span class="h-1.5 w-1.5 rounded-full" :class="getPriorityDotClass(rowPriority)"></span>
+                                <span class="font-mono uppercase tracking-[0.04em]" :class="getPriorityClass(rowPriority)" x-text="rowPriority">{{ $priority }}</span>
                             </span>
-                            @if ($ticket->category)
-                            <span class="text-[var(--border-strong)]">·</span>
-                            <span class="text-[var(--muted)]">{{ $ticket->category }}</span>
-                            @endif
+                            <template x-if="rowCategory">
+                                <span class="flex items-center gap-2.5">
+                                    <span class="text-[var(--border-strong)]">·</span>
+                                    <span class="text-[var(--muted)]" x-text="rowCategory">{{ $ticket->category }}</span>
+                                </span>
+                            </template>
                             <span class="ml-auto font-mono text-[var(--muted)]">{{ $ticket->created_at->diffForHumans() }}</span>
                             @if ($ticket->messages->count() > 0)
                             <span class="flex items-center gap-1 font-mono text-[var(--muted)]">
@@ -391,8 +480,7 @@
                     </div>
 
                     {{-- Per-tab empty states --}}
-                    @if ($stats['unassigned'] === 0)
-                    <div class="px-5 py-10 text-center" x-show="tab === 'unassigned'" x-cloak>
+                    <div class="px-5 py-10 text-center" x-show="tab === 'unassigned' && unassignedCount === 0" x-cloak>
                         <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--green-text-08)]">
                             <svg class="h-4.5 w-4.5 text-[var(--green-text)]" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                                 <path d="M2.5 8.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
@@ -401,13 +489,11 @@
                         <p class="text-[13px] font-medium text-[var(--foreground)]">All tickets have a responsible agent</p>
                         <p class="mt-0.5 text-[12px] text-[var(--muted)]">Nothing waiting for placement.</p>
                     </div>
-                    @endif
-                    @if ($stats['mine'] === 0)
-                    <div class="px-5 py-10 text-center" x-show="tab === 'mine'" x-cloak>
+
+                    <div class="px-5 py-10 text-center" x-show="tab === 'mine' && mineCount === 0" x-cloak>
                         <p class="text-[13px] font-medium text-[var(--foreground)]">No tickets assigned to you</p>
                         <p class="mt-0.5 text-[12px] text-[var(--muted)]">Grab one from the Unassigned tab.</p>
                     </div>
-                    @endif
                 </div>
             </div>
 
@@ -418,7 +504,9 @@
                 </div>
                 <div class="divide-y divide-[var(--border)]">
                     @forelse ($latestTickets as $ticket)
-                    <div class="ticket-row-interactive flex items-center justify-between px-5 py-3">
+                    <div class="ticket-row-interactive flex items-center justify-between px-5 py-3"
+                        x-data="{ rowTitle: '{{ addslashes($ticket->title) }}' }"
+                        @ticket-updated.window="if ($event.detail.id === {{ $ticket->id }} && $event.detail.title) rowTitle = $event.detail.title">
                         <div class="min-w-0 flex-1 cursor-pointer" @click="$dispatch('open-ticket-modal', { ticketId: {{ $ticket->id }} })">
                             <div class="flex items-center justify-between gap-2">
                                 <span class="font-mono text-[11px] font-medium text-[var(--accent)]">
@@ -426,7 +514,7 @@
                                 </span>
                                 <span class="font-mono text-[10.5px] text-[var(--muted)]">{{ $ticket->created_at->diffForHumans() }}</span>
                             </div>
-                            <div class="ticket-title-link mt-1 truncate text-[12.5px] font-medium text-[var(--foreground)] transition-colors duration-200">{{ $ticket->title }}</div>
+                            <div class="ticket-title-link mt-1 truncate text-[12.5px] font-medium text-[var(--foreground)] transition-colors duration-200" x-text="rowTitle">{{ $ticket->title }}</div>
                             <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-[var(--muted)]">
                                 <span>{{ $ticket->customer->name ?? 'Unknown' }}</span>
                                 @if ($ticket->assignee)

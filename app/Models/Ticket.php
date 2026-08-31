@@ -17,9 +17,18 @@ class Ticket extends Model
         'olt',
         'location',
         'priority',
-        'impact',
         'status',
+        'last_visited_at',
     ];
+
+    public function touchVisited(): void
+    {
+        if ($this->id) {
+            \Illuminate\Support\Facades\DB::table('tickets')
+                ->where('id', $this->id)
+                ->update(['last_visited_at' => now()]);
+        }
+    }
 
     protected function casts(): array
     {

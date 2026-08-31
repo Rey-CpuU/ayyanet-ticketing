@@ -26,12 +26,16 @@
                 </div>
 
                 <div>
-                    <label for="role" class="label">Role</label>
-                    <select name="role" id="role" class="input">
-                        @foreach (['cs' => 'CS — Customer Support', 'lapangan' => 'Staff — Lapangan / Teknisi', 'admin' => 'Admin'] as $value => $label)
-                            <option value="{{ $value }}" @selected(old('role', 'cs') === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
+                    <label for="role" class="label">Role <span class="text-[var(--red-text)]">*</span></label>
+                    <x-custom-select
+                        name="role"
+                        id="role"
+                        :value="old('role', 'cs')"
+                        :options="[
+                            'cs' => 'CS — Customer Support',
+                            'lapangan' => 'Staff — Lapangan / Teknisi',
+                            'admin' => 'Admin'
+                        ]" />
                     <x-input-error :messages="$errors->get('role')" class="mt-1.5" />
                 </div>
 

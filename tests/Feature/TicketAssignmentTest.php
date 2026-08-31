@@ -5,111 +5,136 @@ use App\Models\Ticket;
 use App\Models\TicketActivity;
 use App\Models\User;
 
-beforeEach(function () {
-    $this->user = User::factory()->create(['role' => 'cs']);
-    $this->agent = User::factory()->create(['role' => 'cs']);
-    $this->customer = Customer::create([
+function createTicketAssignmentContext(): array
+{
+    $user = User::factory()->create(['role' => 'cs']);
+    $agent = User::factory()->create(['role' => 'cs']);
+    $customer = Customer::create([
         'name' => 'Budi',
         'phone' => '0812-0000-0000',
         'address' => 'Jl. Melati No. 1',
         'customer_id' => 'CUS-TEST1',
     ]);
-    $this->ticket = Ticket::create([
+    $ticket = Ticket::create([
         'ticket_number' => 'TCK-TEST-1',
-        'customer_id' => $this->customer->id,
-        'created_by' => $this->user->id,
+        'customer_id' => $customer->id,
+        'created_by' => $user->id,
         'title' => 'Internet putus',
         'description' => 'Tidak ada koneksi',
         'category' => 'Internet',
         'priority' => 'Medium',
-        'impact' => 'Medium',
         'status' => 'Open',
     ]);
-});
+
+    return compact('user', 'agent', 'customer', 'ticket');
+}
 
 test('assignment requires authentication', function () {
-    $this->patch("/tickets/{$this->ticket->id}/assignee", ['assigned_to' => $this->agent->id])
+    ['agent' => $agent, 'ticket' => $ticket] = createTicketAssignmentContext();
+
+    $this->patch("/tickets/{$ticket->id}/assignee", ['assigned_to' => $agent->id])
         ->assertRedirect('/login');
 });
 
 test('staff can place a ticket with an agent and records an assignment audit entry', function () {
-    $this->actingAs($this->user)->patch("/tickets/{$this->ticket->id}/assignee", [
-        'assigned_to' => $this->agent->id,
+    ['user' => $user, 'agent' => $agent, 'ticket' => $ticket] = createTicketAssignmentContext();
+
+    $this->actingAs($user)->patch("/tickets/{$ticket->id}/assignee", [
+        'assigned_to' => $agent->id,
     ])->assertRedirect();
 
-    expect($this->ticket->fresh()->assigned_to)->toBe($this->agent->id);
+    expect($ticket->fresh()->assigned_to)->toBe($agent->id);
 
     $this->assertDatabaseHas('ticket_activities', [
-        'ticket_id' => $this->ticket->id,
-        'user_id'   => $this->user->id,
+        'ticket_id' => $ticket->id,
+        'user_id'   => $user->id,
         'action'    => 'assignment',
         'old_value' => 'Unassigned',
-        'new_value' => $this->agent->name,
+        'new_value' => $agent->name,
     ]);
 });
 
 test('a ticket can be unassigned', function () {
-    $this->ticket->update(['assigned_to' => $this->agent->id]);
+    ['user' => $user, 'agent' => $agent, 'ticket' => $ticket] = createTicketAssignmentContext();
+    $ticket->update(['assigned_to' => $agent->id]);
 
-    $this->actingAs($this->user)->patch("/tickets/{$this->ticket->id}/assignee", [
+    $this->actingAs($user)->patch("/tickets/{$ticket->id}/assignee", [
         'assigned_to' => '',
     ])->assertRedirect();
 
-    expect($this->ticket->fresh()->assigned_to)->toBeNull();
+    expect($ticket->fresh()->assigned_to)->toBeNull();
 
     $this->assertDatabaseHas('ticket_activities', [
-        'ticket_id' => $this->ticket->id,
+        'ticket_id' => $ticket->id,
         'action'    => 'assignment',
-        'old_value' => $this->agent->name,
+        'old_value' => $agent->name,
         'new_value' => 'Unassigned',
     ]);
 });
 
 test('assigning the same agent does not create a duplicate audit entry', function () {
-    $this->ticket->update(['assigned_to' => $this->agent->id]);
+    ['user' => $user, 'agent' => $agent, 'ticket' => $ticket] = createTicketAssignmentContext();
+    $ticket->update(['assigned_to' => $agent->id]);
 
-    $this->actingAs($this->user)->patch("/tickets/{$this->ticket->id}/assignee", [
-        'assigned_to' => $this->agent->id,
+    $this->actingAs($user)->patch("/tickets/{$ticket->id}/assignee", [
+        'assigned_to' => $agent->id,
     ])->assertRedirect();
 
-    expect(TicketActivity::where('ticket_id', $this->ticket->id)->where('action', 'assignment')->count())->toBe(0);
+    expect(TicketActivity::where('ticket_id', $ticket->id)->where('action', 'assignment')->count())->toBe(0);
 });
 
 test('assigning to a non-existent user is rejected', function () {
-    $this->actingAs($this->user)->patch("/tickets/{$this->ticket->id}/assignee", [
+    ['user' => $user, 'ticket' => $ticket] = createTicketAssignmentContext();
+
+    $this->actingAs($user)->patch("/tickets/{$ticket->id}/assignee", [
         'assigned_to' => 99999,
     ])->assertSessionHasErrors('assigned_to');
 
-    expect($this->ticket->fresh()->assigned_to)->toBeNull();
+    expect($ticket->fresh()->assigned_to)->toBeNull();
 });
 
-test('creating a ticket auto-detects the operational impact', function () {
-    $this->post('/tickets', [
-        'customer_id' => $this->customer->id,
+test('creating a ticket auto-detects the priority and category', function () {
+    ['user' => $user, 'customer' => $customer] = createTicketAssignmentContext();
+
+    $this->actingAs($user)->post('/tickets', [
+        'customer_id' => $customer->id,
         'title' => 'Gangguan total, seluruh area tidak ada koneksi',
         'description' => 'Outage di area Perumnas',
     ])->assertRedirect('/tickets');
 
     $this->assertDatabaseHas('tickets', [
-        'impact' => 'Critical',
+        'priority' => 'High',
+        'category' => 'Internet',
     ]);
 });
 
-test('a manual impact override wins over the classifier', function () {
-    $this->post('/tickets', [
-        'customer_id' => $this->customer->id,
+test('a manual priority override wins over the classifier', function () {
+    ['user' => $user, 'customer' => $customer] = createTicketAssignmentContext();
+
+    $this->actingAs($user)->post('/tickets', [
+        'customer_id' => $customer->id,
         'title' => 'Gangguan total, seluruh area tidak ada koneksi',
         'description' => 'Outage di area Perumnas',
-        'impact' => 'Low',
+        'priority' => 'Low',
     ])->assertRedirect('/tickets');
 
     $this->assertDatabaseHas('tickets', [
-        'impact' => 'Low',
+        'priority' => 'Low',
     ]);
 });
 
-test('classify endpoint returns an impact value', function () {
+test('classify endpoint returns category and priority', function () {
     $this->post('/tickets/classify', ['title' => 'Internet lambat saat jam kantor'])
         ->assertOk()
-        ->assertJson(['impact' => 'High']);
+        ->assertJson(['priority' => 'Medium', 'category' => 'Internet']);
+});
+
+test('assignment endpoint responds with JSON when requested', function () {
+    ['user' => $user, 'agent' => $agent, 'ticket' => $ticket] = createTicketAssignmentContext();
+
+    $this->actingAs($user)->patchJson("/tickets/{$ticket->id}/assignee", [
+        'assigned_to' => $agent->id,
+    ])->assertOk()->assertJson(['success' => true]);
+
+    expect($ticket->fresh()->assigned_to)->toBe($agent->id);
 });

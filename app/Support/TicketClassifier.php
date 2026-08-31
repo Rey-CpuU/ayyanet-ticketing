@@ -40,25 +40,6 @@ class TicketClassifier
         'ping', 'lambat sekali',
     ];
 
-    /**
-     * Impact rules. Critical = outage / total loss, High = degraded service,
-     * Medium = connectivity trouble, else Low (requests, billing, info).
-     */
-    private const CRITICAL_IMPACT = [
-        'mati total', 'putus total', 'tidak ada koneksi', 'area', 'seluruh',
-        'semua', 'outage', 'down', 'kritis', 'urgent', 'offline', 'gagal',
-    ];
-
-    private const HIGH_IMPACT = [
-        'lambat', 'lemot', 'sering', 'intermittent', 'tidak bisa', 'terputus',
-        'kecepatan', 'upload', 'download', 'gagal', 'escalated',
-    ];
-
-    private const MEDIUM_IMPACT = [
-        'internet', 'wifi', 'wi-fi', 'koneksi', 'sinyal', 'modem', 'ping',
-        'delay', 'turun', 'putus', 'router', 'ont',
-    ];
-
     public static function classify(string $title, string $description = ''): array
     {
         $text = mb_strtolower(trim($title . ' ' . $description));
@@ -66,7 +47,6 @@ class TicketClassifier
         return [
             'category' => self::detectCategory($text),
             'priority' => self::detectPriority($text),
-            'impact'   => self::detectImpact($text),
         ];
     }
 
@@ -88,23 +68,6 @@ class TicketClassifier
         }
 
         if (self::matchesAny($text, self::MEDIUM_PRIORITY)) {
-            return 'Medium';
-        }
-
-        return 'Low';
-    }
-
-    private static function detectImpact(string $text): string
-    {
-        if (self::matchesAny($text, self::CRITICAL_IMPACT)) {
-            return 'Critical';
-        }
-
-        if (self::matchesAny($text, self::HIGH_IMPACT)) {
-            return 'High';
-        }
-
-        if (self::matchesAny($text, self::MEDIUM_IMPACT)) {
             return 'Medium';
         }
 

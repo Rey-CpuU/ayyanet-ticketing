@@ -13,7 +13,7 @@
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                <div class="hidden sm:-my-px sm:ms-10 sm:flex items-center gap-1 h-full">
                     @auth
                         <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                             {{ __('Dashboard') }}
@@ -45,7 +45,7 @@
                 @auth
                     <x-dropdown align="right" width="64">
                         <x-slot name="trigger">
-                            <button class="relative inline-flex items-center justify-center p-2 rounded-md text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] focus:outline-none transition">
+                            <button type="button" class="relative inline-flex items-center justify-center p-2 rounded-md text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] focus:outline-none transition">
                                 <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                                     <path d="M8 1.5a3.5 3.5 0 00-3.5 3.5v2.2L3.2 8.7A1 1 0 004 10.2h8a1 1 0 00.8-1.5L11.5 7.2V5A3.5 3.5 0 008 1.5zM6 11.5a2 2 0 004 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
@@ -81,7 +81,7 @@
                 @auth
                     <x-dropdown align="right" width="48">
                         <x-slot name="trigger">
-                            <button class="inline-flex items-center gap-2 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-[var(--muted)] bg-transparent hover:text-[var(--foreground)] focus:outline-none transition ease-in-out duration-150">
+                            <button type="button" class="inline-flex items-center gap-2 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-[var(--muted)] bg-transparent hover:text-[var(--foreground)] focus:outline-none transition ease-in-out duration-150">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[11px] font-semibold text-[var(--accent-text)]">
                                     {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
                                 </div>

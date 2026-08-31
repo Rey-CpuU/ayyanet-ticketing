@@ -46,7 +46,7 @@
                             @endphp
                             <tr class="transition hover:bg-[var(--hover-overlay)]">
                                 <td class="px-5 py-4">
-                                    <span class="badge font-mono uppercase tracking-[0.06em]" style="background: {{ $typeStyle['bg'] }}; color: {{ $typeStyle['text'] }};">{{ $banner->type }}</span>
+                                    <span class="badge font-mono uppercase tracking-[0.06em]" style="background: {{ $typeStyle['bg'] }}; color: {{ $typeStyle['text'] }};">{{ $banner->type === 'info' ? 'Tentang' : $banner->type }}</span>
                                 </td>
                                 <td class="px-5 py-4 text-[13.5px] font-medium text-[var(--foreground)]">{{ $banner->title }}</td>
                                 <td class="px-5 py-4">

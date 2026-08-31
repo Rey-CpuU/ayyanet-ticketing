@@ -33,11 +33,16 @@
 
                 <div>
                     <label for="type" class="label">Type</label>
-                    <select name="type" id="type" class="input">
-                        @foreach (['outage', 'maintenance', 'warning', 'info'] as $type)
-                            <option value="{{ $type }}" @selected(old('type', 'info') === $type)>{{ ucfirst($type) }}</option>
-                        @endforeach
-                    </select>
+                    <x-custom-select
+                        name="type"
+                        id="type"
+                        :value="old('type', 'outage')"
+                        :options="[
+                            'outage' => 'Outage',
+                            'maintenance' => 'Maintenance',
+                            'warning' => 'Warning',
+                            'info' => 'Tentang'
+                        ]" />
                 </div>
 
                 <div class="flex items-end pb-1.5">

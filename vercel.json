@@ -10,8 +10,8 @@
   "outputDirectory": "public",
   "env": {
     "APP_ENV": "production",
-    "APP_DEBUG": "true",
-    "APP_KEY": "base64:6bNqJvWqO0xX9YnZ7t8M1k2L3p4Q5r6S7t8U9v0W1x2=",
+    "APP_DEBUG": "false",
+    "APP_KEY": "",
     "APP_URL": "https://ayyanet-ticketing.vercel.app",
     "SESSION_DRIVER": "cookie",
     "CACHE_STORE": "file",

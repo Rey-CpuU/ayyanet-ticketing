@@ -11,36 +11,30 @@
                     <div class="flex items-center gap-2.5">
                         <span class="font-mono text-[11.5px] font-medium text-[var(--accent)]">{{ $ticket->ticket_number }}</span>
                         @php
-                            $priorityColor = match ($ticket->priority) {
-                                'High' => 'var(--amber-text)',
-                                'Medium' => 'var(--blue-text)',
-                                default => 'var(--muted)',
+                            $priorityClass = match ($ticket->priority) {
+                                'High' => 'priority-high',
+                                'Medium' => 'priority-medium',
+                                default => 'priority-default',
                             };
-                            $statusBadge = match ($ticket->status) {
-                                'Open' => ['bg' => 'color-mix(in srgb, var(--red-text) 12%, transparent)', 'text' => 'var(--red-text)'],
-                                'Checking' => ['bg' => 'color-mix(in srgb, var(--violet-text) 15%, transparent)', 'text' => 'var(--violet-text)'],
-                                'Waiting Customer' => ['bg' => 'color-mix(in srgb, var(--amber-text) 12%, transparent)', 'text' => 'var(--amber-text)'],
-                                'Escalated' => ['bg' => 'color-mix(in srgb, var(--orange-text) 14%, transparent)', 'text' => 'var(--orange-text)'],
-                                'Solved' => ['bg' => 'color-mix(in srgb, var(--green-text) 12%, transparent)', 'text' => 'var(--green-text)'],
-                                default => ['bg' => 'color-mix(in srgb, var(--slate-text) 12%, transparent)', 'text' => 'var(--slate-text)'],
+                            $priorityDotClass = match ($ticket->priority) {
+                                'High' => 'priority-dot-high',
+                                'Medium' => 'priority-dot-medium',
+                                default => 'priority-dot-default',
+                            };
+                            $statusBadgeClass = match ($ticket->status) {
+                                'Open' => 'badge-red',
+                                'Checking' => 'badge-violet',
+                                'Waiting Customer' => 'badge-amber',
+                                'Escalated' => 'badge-orange',
+                                'Solved' => 'badge-green',
+                                default => 'badge-slate',
                             };
                         @endphp
-                        <span class="badge" style="background: {{ $statusBadge['bg'] }}; color: {{ $statusBadge['text'] }};">{{ $ticket->status }}</span>
-                        <span class="flex items-center gap-1.5 text-[11px] font-medium font-mono uppercase tracking-[0.04em]" style="color: {{ $priorityColor }}">
-                            <span class="h-1.5 w-1.5 rounded-full" style="background: {{ $priorityColor }}"></span>
+                        <span class="badge {{ $statusBadgeClass }}">{{ $ticket->status }}</span>
+                        <span class="flex items-center gap-1.5 text-[11px] font-medium font-mono uppercase tracking-[0.04em] {{ $priorityClass }}">
+                            <span class="h-1.5 w-1.5 rounded-full {{ $priorityDotClass }}"></span>
                             {{ $ticket->priority }}
                         </span>
-                        @php
-                            $impact = $ticket->impact ?? 'Medium';
-                            $impactBadge = [
-                                'Critical' => ['bg' => 'color-mix(in srgb, var(--red-text) 14%, transparent)', 'text' => 'var(--red-text)', 'glow' => 'var(--red-glow)'],
-                                'High'     => ['bg' => 'color-mix(in srgb, var(--amber-text) 13%, transparent)', 'text' => 'var(--amber-text)', 'glow' => 'var(--amber-glow)'],
-                                'Medium'   => ['bg' => 'color-mix(in srgb, var(--blue-text) 13%, transparent)', 'text' => 'var(--blue-text)', 'glow' => 'var(--blue-glow)'],
-                                'Low'      => ['bg' => 'color-mix(in srgb, var(--slate-text) 14%, transparent)', 'text' => 'var(--slate-text)', 'glow' => 'none'],
-                            ];
-                            $imp = $impactBadge[$impact] ?? $impactBadge['Medium'];
-                        @endphp
-                        <span class="badge" style="background: {{ $imp['bg'] }}; color: {{ $imp['text'] }}; box-shadow: {{ $imp['glow'] }};">{{ $impact }}</span>
                     </div>
                     <h2 class="mt-1 font-display text-[15px] font-semibold leading-snug text-[var(--foreground)]">{{ $ticket->title }}</h2>
 
@@ -51,7 +45,7 @@
                                 @csrf
                                 @method('PATCH')
                                 <select name="assigned_to" onchange="this.form.submit()"
-                                        class="select-chip inline-flex items-center gap-1 rounded-full border px-2.5 py-[3px] text-[11px] font-semibold transition
+                                        class="select-chip inline-flex items-center gap-1.5 rounded-full border text-[13px] font-semibold transition
                                         {{ $ticket->assigned_to === null
                                             ? 'border-dashed border-[var(--amber-text-50)] bg-[var(--amber-text-06)] text-[var(--amber-text)]'
                                             : 'border-[var(--border-strong)] bg-[var(--surface-3)] text-[var(--foreground)]' }}">
@@ -74,6 +68,17 @@
                     </div>
                 </div>
             </div>
+
+            @auth
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('tickets.edit', $ticket) }}" class="btn-secondary">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <path d="M11 2l3 3-9 9H2v-3l9-9z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Edit Ticket
+                    </a>
+                </div>
+            @endauth
         </div>
     </x-slot>
 
@@ -128,7 +133,7 @@
                 <form action="{{ route('tickets.messages.store', $ticket->id) }}" method="POST" class="border-t border-[var(--border)] px-5 py-4">
                     @csrf
                     <label for="message" class="label">Reply</label>
-                    <textarea name="message" id="message" rows="3" required placeholder="Tulis balasan pesan di sini…" class="input resize-none"></textarea>
+                    <textarea name="message" id="message" rows="3" required placeholder="Tulis balasan pesan di sini…" class="input resize-none" onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); if(this.value.trim()) this.form.submit(); }"></textarea>
                     <x-input-error :messages="$errors->get('message')" class="mt-1.5" />
                     <div class="mt-3 flex items-center justify-between gap-3">
                         <label class="flex cursor-pointer items-center gap-2 text-[12.5px] font-medium text-[var(--muted)]">
@@ -177,7 +182,7 @@
                 </div>
 
                 @auth
-                <div class="card overflow-hidden">
+                <div class="card relative z-20">
                     <div class="border-b border-[var(--border)] px-5 py-4">
                         <h3 class="font-display text-[14px] font-bold tracking-[-0.01em] text-[var(--foreground)]">Update Status</h3>
                     </div>
@@ -185,11 +190,18 @@
                         @csrf
                         @method('PATCH')
                         <label for="status" class="label">Status</label>
-                        <select name="status" id="status" class="input">
-                            @foreach (['Open', 'Checking', 'Waiting Customer', 'Escalated', 'Solved', 'Closed'] as $status)
-                                <option value="{{ $status }}" @selected($ticket->status === $status)>{{ $status }}</option>
-                            @endforeach
-                        </select>
+                        <x-custom-select
+                            name="status"
+                            id="status"
+                            :value="$ticket->status"
+                            :options="[
+                                'Open' => 'Open',
+                                'Checking' => 'Checking',
+                                'Waiting Customer' => 'Waiting Customer',
+                                'Escalated' => 'Escalated',
+                                'Solved' => 'Solved',
+                                'Closed' => 'Closed'
+                            ]" />
                         <x-input-error :messages="$errors->get('status')" class="mt-1.5" />
                         <button type="submit" class="btn-primary mt-3 w-full justify-center">Save Status</button>
                     </form>
@@ -241,11 +253,11 @@
                     <div class="ticket-detail-scroll max-h-[46vh] overflow-y-auto">
                         @forelse ($ticket->activities()->with('user')->latest()->limit(50)->get() as $activity)
                             @php
-                                $actionStyle = match ($activity->action) {
-                                    'status_change' => ['bg' => 'color-mix(in srgb, var(--blue-text) 14%, transparent)', 'text' => 'var(--blue-text)'],
-                                    'internal_note' => ['bg' => 'color-mix(in srgb, var(--amber-text) 12%, transparent)', 'text' => 'var(--amber-text)'],
-                                    'assignment' => ['bg' => 'color-mix(in srgb, var(--cyan-text) 14%, transparent)', 'text' => 'var(--cyan-text)'],
-                                    default => ['bg' => 'color-mix(in srgb, var(--violet-text) 15%, transparent)', 'text' => 'var(--violet-text)'],
+                                $actionBadgeClass = match ($activity->action) {
+                                    'status_change' => 'badge-blue',
+                                    'internal_note' => 'badge-amber',
+                                    'assignment' => 'badge-cyan',
+                                    default => 'badge-violet',
                                 };
                                 $actionLabel = match ($activity->action) {
                                     'status_change' => 'Status',
@@ -260,7 +272,7 @@
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <span class="badge" style="background: {{ $actionStyle['bg'] }}; color: {{ $actionStyle['text'] }};">{{ $actionLabel }}</span>
+                                        <span class="badge {{ $actionBadgeClass }}">{{ $actionLabel }}</span>
                                         <span class="text-[12.5px] font-semibold text-[var(--foreground)]">{{ $activity->user->name ?? 'Unknown' }}</span>
                                         <span class="font-mono text-[10.5px] text-[var(--muted)]">{{ $activity->created_at->format('d M H:i') }}</span>
                                     </div>
