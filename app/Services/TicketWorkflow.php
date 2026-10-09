@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 /**
  * Single entry point for creating tickets and changing their status, priority or assignee,
- * used by the web controllers and the Telegram bot alike. Each operation applies its side
+ * used by the web controllers. Each operation applies its side
  * effects: ticket numbering, SLA bookkeeping, the activity stream and notifications
  * (staff email/in-app, customer email, Telegram group; see TicketNotifier).
  *

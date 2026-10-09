@@ -21,7 +21,7 @@ class Customer extends Model
     ];
 
     /**
-     * Customers created without an explicit customer_id (web form, Telegram bot) get the
+     * Customers created without an explicit customer_id (e.g. the web form) get the
      * standard "C-0001" number derived from the row id.
      */
     protected static function booted(): void

@@ -9,11 +9,11 @@ use Illuminate\Support\Facades\Log;
 class TelegramNotificationService
 {
     /**
-     * Get the bot token for notifications (falls back to main bot token if not set).
+     * Get the bot token for notifications (TELEGRAM_NOTIF_BOT_TOKEN).
      */
     public static function getToken(): ?string
     {
-        return config('telegram.notif_bot_token') ?: config('telegram.bot_token');
+        return config('telegram.notif_bot_token');
     }
 
     /**
@@ -29,9 +29,9 @@ class TelegramNotificationService
      */
     public static function isConfigured(): bool
     {
-        return config('telegram.notif_enabled', true) 
-            && !empty(self::getToken()) 
-            && !empty(self::getGroupId());
+        return config('telegram.notif_enabled', true)
+            && ! empty(self::getToken())
+            && ! empty(self::getGroupId());
     }
 
     /**
@@ -44,18 +44,19 @@ class TelegramNotificationService
 
         if (empty($token) || empty($targetChatId)) {
             Log::info('Telegram notification skipped: Token or Group ID is not configured.');
+
             return null;
         }
 
-        if (!config('telegram.notif_enabled', true)) {
+        if (! config('telegram.notif_enabled', true)) {
             return null;
         }
 
         $apiUrl = "https://api.telegram.org/bot{$token}/sendMessage";
 
         $payload = [
-            'chat_id'    => $targetChatId,
-            'text'       => $text,
+            'chat_id' => $targetChatId,
+            'text' => $text,
             'parse_mode' => 'HTML',
         ];
 
@@ -65,12 +66,14 @@ class TelegramNotificationService
 
         try {
             $response = Http::timeout(10)->post($apiUrl, $payload);
-            if (!$response->successful()) {
-                Log::error('Telegram notification error: ' . $response->body());
+            if (! $response->successful()) {
+                Log::error('Telegram notification error: '.$response->body());
             }
+
             return $response->json();
         } catch (\Exception $e) {
-            Log::error('Telegram notification exception: ' . $e->getMessage());
+            Log::error('Telegram notification exception: '.$e->getMessage());
+
             return null;
         }
     }
@@ -85,32 +88,32 @@ class TelegramNotificationService
         $customerName = e($ticket->customer->name ?? 'Unknown');
         $customerPhone = e($ticket->customer->phone ?? '—');
         $creatorName = e($ticket->creator->name ?? 'System');
-        $oltInfo = $ticket->olt 
-            ? e($ticket->olt . ($ticket->location ? " / {$ticket->location}" : ''))
+        $oltInfo = $ticket->olt
+            ? e($ticket->olt.($ticket->location ? " / {$ticket->location}" : ''))
             : (e($ticket->location ?? '—'));
 
         $prioEmoji = match ($ticket->priority) {
-            'High'   => '🔴',
+            'High' => '🔴',
             'Medium' => '🟡',
-            default  => '🟢',
+            default => '🟢',
         };
 
-        $timeStr = $ticket->created_at 
-            ? $ticket->created_at->timezone('Asia/Jakarta')->format('d M Y H:i') . ' WIB'
-            : now()->timezone('Asia/Jakarta')->format('d M Y H:i') . ' WIB';
+        $timeStr = $ticket->created_at
+            ? $ticket->created_at->timezone('Asia/Jakarta')->format('d M Y H:i').' WIB'
+            : now()->timezone('Asia/Jakarta')->format('d M Y H:i').' WIB';
 
-        $text = "🆕 <b>TIKET BARU MASUK!</b>\n" .
-            "━━━━━━━━━━━━━━━━━━━\n" .
-            "🎫 <b>No. Tiket:</b> <code>{$ticket->ticket_number}</code>\n" .
-            "👤 <b>Customer:</b> {$customerName} (<code>{$customerPhone}</code>)\n" .
-            "📝 <b>Judul:</b> " . e($ticket->title) . "\n" .
-            "🏷️ <b>Kategori:</b> " . e($ticket->category ?? 'Internet') . "\n" .
-            "⚡ <b>Prioritas:</b> {$prioEmoji} <b>" . e($ticket->priority) . "</b>\n" .
-            "📍 <b>OLT / Port:</b> {$oltInfo}\n" .
-            "👨‍💼 <b>Dibuat Oleh:</b> {$creatorName}\n" .
-            "⏱️ <b>Waktu:</b> {$timeStr}\n" .
-            "━━━━━━━━━━━━━━━━━━━\n" .
-            "<i>Mohon tim teknisi/CS untuk segera melakukan pengecekan.</i>";
+        $text = "🆕 <b>TIKET BARU MASUK!</b>\n".
+            "━━━━━━━━━━━━━━━━━━━\n".
+            "🎫 <b>No. Tiket:</b> <code>{$ticket->ticket_number}</code>\n".
+            "👤 <b>Customer:</b> {$customerName} (<code>{$customerPhone}</code>)\n".
+            '📝 <b>Judul:</b> '.e($ticket->title)."\n".
+            '🏷️ <b>Kategori:</b> '.e($ticket->category ?? 'Internet')."\n".
+            "⚡ <b>Prioritas:</b> {$prioEmoji} <b>".e($ticket->priority)."</b>\n".
+            "📍 <b>OLT / Port:</b> {$oltInfo}\n".
+            "👨‍💼 <b>Dibuat Oleh:</b> {$creatorName}\n".
+            "⏱️ <b>Waktu:</b> {$timeStr}\n".
+            "━━━━━━━━━━━━━━━━━━━\n".
+            '<i>Mohon tim teknisi/CS untuk segera melakukan pengecekan.</i>';
 
         return self::sendMessage($text);
     }
@@ -127,35 +130,35 @@ class TelegramNotificationService
         $updaterName = e($updatedByName ?: 'Staff / Admin');
 
         $headerText = match ($newStatus) {
-            'Solved'           => '✅ <b>STATUS TIKET: SELESAI (SOLVED)!</b>',
-            'Closed'           => '🔒 <b>STATUS TIKET: DITUTUP (CLOSED)!</b>',
-            'Checking'         => '🔍 <b>STATUS TIKET: PROSES PENGECEKAN (CHECKING)!</b>',
+            'Solved' => '✅ <b>STATUS TIKET: SELESAI (SOLVED)!</b>',
+            'Closed' => '🔒 <b>STATUS TIKET: DITUTUP (CLOSED)!</b>',
+            'Checking' => '🔍 <b>STATUS TIKET: PROSES PENGECEKAN (CHECKING)!</b>',
             'Waiting Customer' => '⏳ <b>STATUS TIKET: MENUNGGU CUSTOMER!</b>',
-            'Escalated'        => '⚠️ <b>STATUS TIKET: DITINGKATKAN (ESCALATED)!</b>',
-            default            => '🔄 <b>STATUS TIKET DIPERBARUI!</b>',
+            'Escalated' => '⚠️ <b>STATUS TIKET: DITINGKATKAN (ESCALATED)!</b>',
+            default => '🔄 <b>STATUS TIKET DIPERBARUI!</b>',
         };
 
         $statusEmoji = match ($newStatus) {
-            'Solved'           => '🟢',
-            'Closed'           => '⚪',
-            'Checking'         => '🟡',
+            'Solved' => '🟢',
+            'Closed' => '⚪',
+            'Checking' => '🟡',
             'Waiting Customer' => '🟠',
-            'Escalated'        => '🔴',
-            default            => '🔵',
+            'Escalated' => '🔴',
+            default => '🔵',
         };
 
-        $timeStr = now()->timezone('Asia/Jakarta')->format('d M Y H:i') . ' WIB';
+        $timeStr = now()->timezone('Asia/Jakarta')->format('d M Y H:i').' WIB';
 
-        $text = "{$headerText}\n" .
-            "━━━━━━━━━━━━━━━━━━━\n" .
-            "🎫 <b>No. Tiket:</b> <code>{$ticket->ticket_number}</code>\n" .
-            "👤 <b>Customer:</b> {$customerName}\n" .
-            "📝 <b>Judul:</b> " . e($ticket->title) . "\n" .
-            "📊 <b>Perubahan:</b> <s>" . e($oldStatus) . "</s> ➔ {$statusEmoji} <b>" . e($newStatus) . "</b>\n" .
-            "👨‍💻 <b>Diubah Oleh:</b> {$updaterName}\n" .
-            "🛠️ <b>Petugas / Teknisi:</b> {$assigneeName}\n" .
-            "⏱️ <b>Waktu Update:</b> {$timeStr}\n" .
-            "━━━━━━━━━━━━━━━━━━━";
+        $text = "{$headerText}\n".
+            "━━━━━━━━━━━━━━━━━━━\n".
+            "🎫 <b>No. Tiket:</b> <code>{$ticket->ticket_number}</code>\n".
+            "👤 <b>Customer:</b> {$customerName}\n".
+            '📝 <b>Judul:</b> '.e($ticket->title)."\n".
+            '📊 <b>Perubahan:</b> <s>'.e($oldStatus)."</s> ➔ {$statusEmoji} <b>".e($newStatus)."</b>\n".
+            "👨‍💻 <b>Diubah Oleh:</b> {$updaterName}\n".
+            "🛠️ <b>Petugas / Teknisi:</b> {$assigneeName}\n".
+            "⏱️ <b>Waktu Update:</b> {$timeStr}\n".
+            '━━━━━━━━━━━━━━━━━━━';
 
         return self::sendMessage($text);
     }
@@ -169,17 +172,17 @@ class TelegramNotificationService
 
         $customerName = e($ticket->customer->name ?? 'Unknown');
         $updaterName = e($updatedByName ?: 'Staff / Admin');
-        $timeStr = now()->timezone('Asia/Jakarta')->format('d M Y H:i') . ' WIB';
+        $timeStr = now()->timezone('Asia/Jakarta')->format('d M Y H:i').' WIB';
 
-        $text = "👤 <b>PENUGASAN TIKET (ASSIGNMENT)!</b>\n" .
-            "━━━━━━━━━━━━━━━━━━━\n" .
-            "🎫 <b>No. Tiket:</b> <code>{$ticket->ticket_number}</code>\n" .
-            "👤 <b>Customer:</b> {$customerName}\n" .
-            "📝 <b>Judul:</b> " . e($ticket->title) . "\n" .
-            "🛠️ <b>Petugas:</b> <s>" . e($oldAssignee) . "</s> ➔ <b>" . e($newAssignee) . "</b>\n" .
-            "👨‍💻 <b>Ditugaskan Oleh:</b> {$updaterName}\n" .
-            "⏱️ <b>Waktu:</b> {$timeStr}\n" .
-            "━━━━━━━━━━━━━━━━━━━";
+        $text = "👤 <b>PENUGASAN TIKET (ASSIGNMENT)!</b>\n".
+            "━━━━━━━━━━━━━━━━━━━\n".
+            "🎫 <b>No. Tiket:</b> <code>{$ticket->ticket_number}</code>\n".
+            "👤 <b>Customer:</b> {$customerName}\n".
+            '📝 <b>Judul:</b> '.e($ticket->title)."\n".
+            '🛠️ <b>Petugas:</b> <s>'.e($oldAssignee).'</s> ➔ <b>'.e($newAssignee)."</b>\n".
+            "👨‍💻 <b>Ditugaskan Oleh:</b> {$updaterName}\n".
+            "⏱️ <b>Waktu:</b> {$timeStr}\n".
+            '━━━━━━━━━━━━━━━━━━━';
 
         return self::sendMessage($text);
     }
@@ -189,12 +192,12 @@ class TelegramNotificationService
      */
     public static function sendTestNotification(?string $chatId = null): ?array
     {
-        $timeStr = now()->timezone('Asia/Jakarta')->format('d M Y H:i:s') . ' WIB';
-        $text = "🤖 <b>Ayyanet Bot Notifikasi — Test Alert</b>\n" .
-            "━━━━━━━━━━━━━━━━━━━\n" .
-            "✅ Koneksi Bot Notifikasi ke Grup Telegram berhasil!\n" .
-            "⏱️ <b>Waktu Server:</b> {$timeStr}\n\n" .
-            "<i>Bot ini siap mengirimkan notifikasi setiap kali ada Tiket Baru masuk atau Tiket Selesai (Solved/Closed).</i>";
+        $timeStr = now()->timezone('Asia/Jakarta')->format('d M Y H:i:s').' WIB';
+        $text = "🤖 <b>Ayyanet Bot Notifikasi — Test Alert</b>\n".
+            "━━━━━━━━━━━━━━━━━━━\n".
+            "✅ Koneksi Bot Notifikasi ke Grup Telegram berhasil!\n".
+            "⏱️ <b>Waktu Server:</b> {$timeStr}\n\n".
+            '<i>Bot ini siap mengirimkan notifikasi setiap kali ada Tiket Baru masuk atau Tiket Selesai (Solved/Closed).</i>';
 
         return self::sendMessage($text, $chatId);
     }

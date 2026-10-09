@@ -32,8 +32,6 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
-        <env name="TELEGRAM_BOT_TOKEN" value=""/>
-        <env name="TELEGRAM_WEBHOOK_SECRET" value=""/>
         <env name="TELEGRAM_NOTIF_BOT_TOKEN" value=""/>
         <env name="TELEGRAM_NOTIF_GROUP_ID" value=""/>
         <env name="TELEGRAM_NOTIF_ENABLED" value="false"/>

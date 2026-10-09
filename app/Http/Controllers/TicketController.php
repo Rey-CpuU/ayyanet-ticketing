@@ -86,8 +86,8 @@ class TicketController extends Controller
             $data['attachment_path'] = $this->storeAttachment($request->file('attachment'));
         }
 
-        // Numbering, SLA, the activity entry and notifications are handled by the workflow
-        // (shared with the Telegram bot). New tickets always start as Open.
+        // Numbering, SLA, the activity entry and notifications are handled by the workflow.
+        // New tickets always start as Open.
         $ticket = $workflow->create($data, $request->user());
 
         return redirect()->route('tickets.show', $ticket->id)

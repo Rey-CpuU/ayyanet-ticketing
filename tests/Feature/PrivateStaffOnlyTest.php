@@ -3,7 +3,6 @@
 use App\Models\Customer;
 use App\Models\Ticket;
 use App\Models\User;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -129,10 +128,10 @@ test('legacy channel values still display and validate on edit', function () {
 
 // --- Route audit --------------------------------------------------------------------------
 
-test('every route except auth entry points and the telegram webhook requires auth and a staff role', function () {
+test('every route except auth entry points requires auth and a staff role', function () {
     // Guest entry points (login / password reset / staff invitation), auth-session plumbing, and infra.
     $public = ['login', 'password.request', 'password.email', 'password.reset', 'password.store',
-        'register.invite', 'telegram.webhook', 'home'];
+        'register.invite', 'home'];
     $authOnly = ['logout', 'verification.notice', 'verification.verify', 'verification.send', 'password.confirm'];
     $publicUris = ['up', 'login', 'register/invite/{token}', 'storage/{path}'];
     $authOnlyUris = ['confirm-password'];
@@ -181,47 +180,8 @@ test('there is no public chat or customer endpoint', function () {
     $this->post('/live-chat')->assertNotFound();
 });
 
-// --- Telegram webhook ---------------------------------------------------------------------
+test('the interactive telegram bot webhook is gone', function () {
+    expect(Route::has('telegram.webhook'))->toBeFalse();
 
-function telegramUpdate(): array
-{
-    return ['update_id' => 1, 'message' => ['message_id' => 1, 'chat' => ['id' => 4242], 'text' => '/start']];
-}
-
-test('telegram webhook fails closed in production when the secret is empty', function () {
-    Http::fake();
-    config(['telegram.bot_token' => 'dummy', 'telegram.webhook_secret' => '']);
-    $this->app->detectEnvironment(fn () => 'production');
-
-    $this->postJson('/telegram/webhook', telegramUpdate())->assertUnauthorized();
-    Http::assertNothingSent();
+    $this->postJson('/telegram/webhook', ['update_id' => 1])->assertNotFound();
 });
-
-test('telegram webhook rejects a wrong or missing secret', function () {
-    Http::fake();
-    config(['telegram.bot_token' => 'dummy', 'telegram.webhook_secret' => 'rahasia-benar']);
-    $this->app->detectEnvironment(fn () => 'production');
-
-    $this->postJson('/telegram/webhook', telegramUpdate())->assertUnauthorized();
-    $this->postJson('/telegram/webhook', telegramUpdate(), ['X-Telegram-Bot-Api-Secret-Token' => 'salah'])
-        ->assertUnauthorized();
-    Http::assertNothingSent();
-});
-
-test('telegram webhook accepts the correct secret in production', function () {
-    Http::fake(['https://api.telegram.org/*' => Http::response(['ok' => true, 'result' => []])]);
-    config(['telegram.bot_token' => 'dummy', 'telegram.webhook_secret' => 'rahasia-benar']);
-    $this->app->detectEnvironment(fn () => 'production');
-
-    $this->postJson('/telegram/webhook', telegramUpdate(), ['X-Telegram-Bot-Api-Secret-Token' => 'rahasia-benar'])
-        ->assertOk()
-        ->assertJson(['ok' => true]);
-});
-
-test('telegram webhook without a secret is still allowed in local and testing', function (string $env) {
-    Http::fake(['https://api.telegram.org/*' => Http::response(['ok' => true, 'result' => []])]);
-    config(['telegram.bot_token' => 'dummy', 'telegram.webhook_secret' => '']);
-    $this->app->detectEnvironment(fn () => $env);
-
-    $this->postJson('/telegram/webhook', telegramUpdate())->assertOk();
-})->with(['local', 'testing']);

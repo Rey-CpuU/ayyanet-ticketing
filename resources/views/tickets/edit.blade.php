@@ -53,7 +53,7 @@
 
                 <div>
                     <label for="category" class="label">Kategori</label>
-                    {{-- Keep a topic category set by the Telegram bot (e.g. Internet) selectable. --}}
+                    {{-- Keep a legacy topic category (e.g. Internet, from the former Telegram bot) selectable. --}}
                     <x-custom-select
                         name="category"
                         id="category"
