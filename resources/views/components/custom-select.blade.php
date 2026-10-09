@@ -35,8 +35,8 @@ foreach ($normalizedOptions as $opt) {
      :class="{ 'z-50': open, 'z-10': !open }"
      x-data="{
          open: false,
-         selectedValue: '{{ $value }}',
-         selectedLabel: '{{ $selectedLabel }}',
+         selectedValue: @js((string) $value),
+         selectedLabel: @js($selectedLabel),
          selectOption(val, lbl) {
              this.selectedValue = val;
              this.selectedLabel = lbl;
@@ -86,11 +86,11 @@ foreach ($normalizedOptions as $opt) {
         <div class="py-1 max-h-60 overflow-y-auto divide-y divide-[var(--border-60)]">
             @foreach($normalizedOptions as $opt)
             <button type="button"
-                    @click="selectOption('{{ $opt['value'] }}', '{{ $opt['label'] }}')"
+                    @click="selectOption(@js($opt['value']), @js($opt['label']))"
                     class="group flex w-full items-center justify-between px-3.5 py-2.5 text-left text-[12.5px] transition-all duration-150 hover:bg-[var(--hover-overlay)] hover:pl-4.5"
-                    :class="selectedValue === '{{ $opt['value'] }}' ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
+                    :class="selectedValue === @js($opt['value']) ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
                 <span class="truncate">{{ $opt['label'] }}</span>
-                <span x-show="selectedValue === '{{ $opt['value'] }}'" class="text-[var(--accent)] shrink-0">
+                <span x-show="selectedValue === @js($opt['value'])" class="text-[var(--accent)] shrink-0">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                     </svg>
