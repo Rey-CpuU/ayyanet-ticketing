@@ -3,11 +3,21 @@
 namespace App\Services;
 
 use App\Models\Ticket;
+use App\Support\DisplayTime;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class TelegramNotificationService
 {
+    /**
+     * Time label in the display timezone with its abbreviation (e.g. "09 Oct 2026 15:59 WIB").
+     */
+    private static function time(CarbonInterface $value, string $format = 'd M Y H:i'): string
+    {
+        return DisplayTime::format($value, $format.' T');
+    }
+
     /**
      * Get the bot token for notifications (TELEGRAM_NOTIF_BOT_TOKEN).
      */
@@ -98,9 +108,7 @@ class TelegramNotificationService
             default => '🟢',
         };
 
-        $timeStr = $ticket->created_at
-            ? $ticket->created_at->timezone('Asia/Jakarta')->format('d M Y H:i').' WIB'
-            : now()->timezone('Asia/Jakarta')->format('d M Y H:i').' WIB';
+        $timeStr = self::time($ticket->created_at ?? now());
 
         $text = "🆕 <b>TIKET BARU MASUK!</b>\n".
             "━━━━━━━━━━━━━━━━━━━\n".
@@ -147,7 +155,7 @@ class TelegramNotificationService
             default => '🔵',
         };
 
-        $timeStr = now()->timezone('Asia/Jakarta')->format('d M Y H:i').' WIB';
+        $timeStr = self::time(now());
 
         $text = "{$headerText}\n".
             "━━━━━━━━━━━━━━━━━━━\n".
@@ -172,7 +180,7 @@ class TelegramNotificationService
 
         $customerName = e($ticket->customer->name ?? 'Unknown');
         $updaterName = e($updatedByName ?: 'Staff / Admin');
-        $timeStr = now()->timezone('Asia/Jakarta')->format('d M Y H:i').' WIB';
+        $timeStr = self::time(now());
 
         $text = "👤 <b>PENUGASAN TIKET (ASSIGNMENT)!</b>\n".
             "━━━━━━━━━━━━━━━━━━━\n".
@@ -192,7 +200,7 @@ class TelegramNotificationService
      */
     public static function sendTestNotification(?string $chatId = null): ?array
     {
-        $timeStr = now()->timezone('Asia/Jakarta')->format('d M Y H:i:s').' WIB';
+        $timeStr = self::time(now(), 'd M Y H:i:s');
         $text = "🤖 <b>Ayyanet Bot Notifikasi — Test Alert</b>\n".
             "━━━━━━━━━━━━━━━━━━━\n".
             "✅ Koneksi Bot Notifikasi ke Grup Telegram berhasil!\n".

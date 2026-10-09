@@ -29,7 +29,7 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="badge badge-blue">{{ $log->action }}</span>
                             <span class="text-[12.5px] font-semibold text-[var(--foreground)]">{{ $log->user?->name ?? 'System' }}</span>
-                            <span class="font-mono text-[10.5px] text-[var(--muted)]">{{ $log->created_at?->format('d M Y, H:i:s') ?? '-' }}</span>
+                            <span class="font-mono text-[10.5px] text-[var(--muted)]">{{ $log->created_at?->inDisplayTz()->format('d M Y, H:i:s') ?? '-' }}</span>
                         </div>
                         @foreach ($fields as $field)
                             <p class="mt-1 text-[12px] text-[var(--muted)]">

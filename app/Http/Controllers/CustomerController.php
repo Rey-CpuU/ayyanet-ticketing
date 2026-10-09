@@ -5,11 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Customer;
+use App\Support\Search;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class CustomerController extends Controller
 {
@@ -17,7 +17,7 @@ class CustomerController extends Controller
     {
         $this->authorize('viewAny', Customer::class);
 
-        $search = Str::limit(trim((string) $request->query('q', '')), 100, '');
+        $search = Search::input($request, 'q');
         // Deleted customers are only visible to admins.
         $trashed = $request->user()->isAdmin() && in_array($request->query('trashed'), ['with', 'only'], true)
             ? $request->query('trashed')
@@ -43,8 +43,9 @@ class CustomerController extends Controller
     {
         $this->authorize('viewAny', Customer::class);
 
-        $search = Str::limit(trim((string) $request->query('q', '')), 100, '');
+        $search = Search::input($request, 'q');
 
+        // Soft-deleted customers are excluded (SoftDeletes scope): they cannot be picked for tickets.
         $customers = Customer::query()
             ->when($search !== '', fn (Builder $q) => $this->applySearch($q, $search))
             ->orderBy('name')
@@ -56,13 +57,7 @@ class CustomerController extends Controller
 
     private function applySearch(Builder $query, string $search): Builder
     {
-        $term = '%'.$search.'%';
-
-        return $query->where(fn (Builder $q) => $q
-            ->where('name', 'like', $term)
-            ->orWhere('email', 'like', $term)
-            ->orWhere('phone', 'like', $term)
-            ->orWhere('customer_id', 'like', $term));
+        return Search::whereContains($query, ['name', 'email', 'phone', 'customer_id'], $search);
     }
 
     public function create()
@@ -120,6 +115,14 @@ class CustomerController extends Controller
     public function destroy(Customer $customer)
     {
         $this->authorize('delete', $customer);
+
+        // Customers with unresolved tickets stay: their tickets still need the contact details.
+        $openTickets = $customer->tickets()->whereNotIn('status', ['Solved', 'Closed'])->count();
+
+        if ($openTickets > 0) {
+            return redirect()->route('customers.index')
+                ->with('error', "Customer tidak dapat dihapus karena masih memiliki {$openTickets} ticket yang belum selesai. Selesaikan atau tutup ticket tersebut terlebih dahulu.");
+        }
 
         $customer->delete();
 

@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Ticket;
+use App\Support\DisplayTime;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -26,7 +27,7 @@ class TicketSlaBreached extends Notification implements ShouldQueue
      */
     public function toArray(object $notifiable): array
     {
-        $deadline = $this->ticket->sla_deadline?->format('d M Y, H:i') ?? '-';
+        $deadline = DisplayTime::format($this->ticket->sla_deadline, 'd M Y, H:i', '-');
 
         return [
             'type' => 'sla_breached',

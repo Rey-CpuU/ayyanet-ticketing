@@ -15,7 +15,7 @@
 
     @if ($compact)
         <span {{ $attributes->class(['inline-flex items-center gap-1 rounded-full border px-1.5 py-[1px] font-mono text-[10px] font-semibold', $tone]) }}
-              title="SLA {{ $sla['label'] }} · deadline {{ $sla['deadline']->format('d M Y, H:i') }}">
+              title="SLA {{ $sla['label'] }} · deadline {{ $sla['deadline']->inDisplayTz()->format('d M Y, H:i') }}">
             <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.3" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.5V8l2.3 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
             @if ($sla['running'])
                 <span data-sla-deadline="{{ $sla['deadline']->toIso8601String() }}" data-sla-short>{{ $sla['label'] }}</span>
@@ -29,7 +29,7 @@
                 <span class="text-[10.5px] font-semibold uppercase tracking-[0.08em]">SLA Deadline</span>
                 <span class="rounded-full border border-current px-2 py-[1px] text-[10.5px] font-semibold">{{ $sla['label'] }}</span>
             </div>
-            <div class="mt-1.5 font-mono text-[13px] font-semibold text-[var(--foreground)]">{{ $sla['deadline']->format('d M Y, H:i') }}</div>
+            <div class="mt-1.5 font-mono text-[13px] font-semibold text-[var(--foreground)]">{{ $sla['deadline']->inDisplayTz()->format('d M Y, H:i') }}</div>
             @if ($sla['running'])
                 <div class="mt-1 font-mono text-[11.5px]" id="sla-countdown" data-sla-deadline="{{ $sla['deadline']->toIso8601String() }}" data-deadline="{{ $sla['deadline']->toIso8601String() }}" aria-live="polite"></div>
             @elseif ($remaining !== null)

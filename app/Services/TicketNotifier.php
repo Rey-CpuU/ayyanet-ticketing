@@ -86,7 +86,7 @@ class TicketNotifier
             return;
         }
 
-        $this->afterCommit('customer email', fn () => Mail::to($email)->send(new TicketUpdatedMail($ticket, $action)));
+        $this->afterCommit('customer email', fn () => Mail::to($email)->queue(new TicketUpdatedMail($ticket, $action)));
     }
 
     private function telegram(string $event, callable $send): void

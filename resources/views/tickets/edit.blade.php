@@ -21,24 +21,45 @@
             @csrf
             @method('PUT')
 
+            @php $canEditDetails = auth()->user()->can('updateDetails', $ticket); @endphp
+
             <div class="grid gap-5 sm:grid-cols-2">
-                <div class="sm:col-span-2">
-                    <label for="customer_search" class="label">Customer <span class="text-[var(--red-text)]">*</span></label>
-                    <x-customer-picker :selected="$selectedCustomer" />
-                    <x-input-error :messages="$errors->get('customer_id')" class="mt-1.5" />
-                </div>
+                @if ($canEditDetails)
+                    <div class="sm:col-span-2">
+                        <label for="customer_search" class="label">Customer <span class="text-[var(--red-text)]">*</span></label>
+                        <x-customer-picker :selected="$selectedCustomer" />
+                        <x-input-error :messages="$errors->get('customer_id')" class="mt-1.5" />
+                    </div>
 
-                <div class="sm:col-span-2">
-                    <label for="title" class="label">Judul <span class="text-[var(--red-text)]">*</span></label>
-                    <input type="text" name="title" id="title" value="{{ old('title', $ticket->title) }}" required maxlength="255" class="input">
-                    <x-input-error :messages="$errors->get('title')" class="mt-1.5" />
-                </div>
+                    <div class="sm:col-span-2">
+                        <label for="title" class="label">Judul <span class="text-[var(--red-text)]">*</span></label>
+                        <input type="text" name="title" id="title" value="{{ old('title', $ticket->title) }}" required maxlength="255" class="input">
+                        <x-input-error :messages="$errors->get('title')" class="mt-1.5" />
+                    </div>
 
-                <div class="sm:col-span-2">
-                    <label for="description" class="label">Deskripsi <span class="text-[var(--red-text)]">*</span></label>
-                    <textarea name="description" id="description" rows="5" required class="input resize-none">{{ old('description', $ticket->description) }}</textarea>
-                    <x-input-error :messages="$errors->get('description')" class="mt-1.5" />
-                </div>
+                    <div class="sm:col-span-2">
+                        <label for="description" class="label">Deskripsi <span class="text-[var(--red-text)]">*</span></label>
+                        <textarea name="description" id="description" rows="5" required class="input resize-none">{{ old('description', $ticket->description) }}</textarea>
+                        <x-input-error :messages="$errors->get('description')" class="mt-1.5" />
+                    </div>
+                @else
+                    {{-- Field technicians: customer, title, priority, category and assignee are read-only (TicketPolicy::updateDetails). --}}
+                    <dl class="grid gap-3 rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3 text-[12.5px] sm:col-span-2 sm:grid-cols-2">
+                        <div>
+                            <dt class="text-[var(--muted)]">Customer</dt>
+                            <dd class="font-semibold text-[var(--foreground)]"><x-customer-name :customer="$ticket->customer" /></dd>
+                        </div>
+                        <div>
+                            <dt class="text-[var(--muted)]">Prioritas</dt>
+                            <dd class="font-semibold text-[var(--foreground)]">{{ $ticket->priority }}</dd>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <dt class="text-[var(--muted)]">Judul</dt>
+                            <dd class="font-semibold text-[var(--foreground)]">{{ $ticket->title }}</dd>
+                        </div>
+                        <p class="text-[11.5px] text-[var(--muted)] sm:col-span-2">Teknisi lapangan hanya dapat mengubah status, OLT dan lokasi. Gunakan balasan/catatan pada tiket untuk informasi lain.</p>
+                    </dl>
+                @endif
 
                 <div>
                     <label for="status" class="label">Status</label>
@@ -51,27 +72,29 @@
                     <x-input-error :messages="$errors->get('status')" class="mt-1.5" />
                 </div>
 
-                <div>
-                    <label for="category" class="label">Kategori</label>
-                    {{-- Keep a legacy topic category (e.g. Internet, from the former Telegram bot) selectable. --}}
-                    <x-custom-select
-                        name="category"
-                        id="category"
-                        :value="old('category', $ticket->category)"
-                        placeholder="— Pilih —"
-                        :options="collect([...App\Models\Ticket::CATEGORIES, $ticket->category])->filter()->unique()->mapWithKeys(fn ($c) => [$c => $c])->all()" />
-                    <x-input-error :messages="$errors->get('category')" class="mt-1.5" />
-                </div>
+                @if ($canEditDetails)
+                    <div>
+                        <label for="category" class="label">Kategori</label>
+                        {{-- Keep a legacy topic category (e.g. Internet, from the former Telegram bot) selectable. --}}
+                        <x-custom-select
+                            name="category"
+                            id="category"
+                            :value="old('category', $ticket->category)"
+                            placeholder="— Pilih —"
+                            :options="collect([...App\Models\Ticket::CATEGORIES, $ticket->category])->filter()->unique()->mapWithKeys(fn ($c) => [$c => $c])->all()" />
+                        <x-input-error :messages="$errors->get('category')" class="mt-1.5" />
+                    </div>
 
-                <div>
-                    <label for="priority" class="label">Prioritas</label>
-                    <x-custom-select
-                        name="priority"
-                        id="priority"
-                        :value="old('priority', $ticket->priority)"
-                        :options="['Low' => 'Low', 'Medium' => 'Medium', 'High' => 'High']" />
-                    <x-input-error :messages="$errors->get('priority')" class="mt-1.5" />
-                </div>
+                    <div>
+                        <label for="priority" class="label">Prioritas</label>
+                        <x-custom-select
+                            name="priority"
+                            id="priority"
+                            :value="old('priority', $ticket->priority)"
+                            :options="['Low' => 'Low', 'Medium' => 'Medium', 'High' => 'High']" />
+                        <x-input-error :messages="$errors->get('priority')" class="mt-1.5" />
+                    </div>
+                @endif
 
                 <div>
                     <label for="olt" class="label">OLT</label>
@@ -92,11 +115,13 @@
                     <x-input-error :messages="$errors->get('resolution_note')" class="mt-1.5" />
                 </div>
 
-                <x-file-dropzone
-                    name="attachment"
-                    class="sm:col-span-2"
-                    :current-name="$ticket->attachment_path ? basename($ticket->attachment_path) : null"
-                    :current-url="$ticket->attachment_path ? route('tickets.attachment', $ticket) : null" />
+                @if ($canEditDetails)
+                    <x-file-dropzone
+                        name="attachment"
+                        class="sm:col-span-2"
+                        :current-name="$ticket->attachment_path ? basename($ticket->attachment_path) : null"
+                        :current-url="$ticket->attachment_path ? route('tickets.attachment', $ticket) : null" />
+                @endif
             </div>
 
             <div class="flex items-center justify-end gap-3 border-t border-[var(--border)] pt-5">

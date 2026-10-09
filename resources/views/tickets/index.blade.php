@@ -14,13 +14,14 @@
                 <a href="{{ $isMine ? route('tickets.index') : route('my.tickets') }}" class="btn-secondary">
                     {{ $isMine ? 'Semua Tiket' : 'Tiket Saya' }}
                 </a>
-                <a href="{{ route('tickets.export.csv') }}" class="btn-secondary">
+                {{-- Exports contain exactly the filtered list shown below. --}}
+                <a href="{{ route('tickets.export.csv', $exportParameters) }}" class="btn-secondary">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                         <path d="M8 2v8m0 0L5 7m3 3l3-3M2.5 12.5v1h11v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                     CSV
                 </a>
-                <a href="{{ route('tickets.export.pdf') }}" target="_blank" rel="noopener" class="btn-secondary">
+                <a href="{{ route('tickets.export.pdf', $exportParameters) }}" target="_blank" rel="noopener" class="btn-secondary">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                         <path d="M8 2v8m0 0L5 7m3 3l3-3M2.5 12.5v1h11v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -124,7 +125,7 @@
                                     @endif
                                 </td>
                                 <td class="px-5 py-4">
-                                    <div class="text-[13px] text-[var(--foreground)]">{{ $ticket->customer->name ?? 'Unknown' }}</div>
+                                    <x-customer-name :customer="$ticket->customer" class="block text-[13px] text-[var(--foreground)]" />
                                     <div class="text-[11.5px] text-[var(--muted)]">{{ $ticket->customer->phone ?? '' }}</div>
                                 </td>
                                 <td class="px-5 py-4"><x-ticket-priority :priority="$ticket->priority" /></td>
@@ -144,8 +145,8 @@
                                 </td>
                                 <td class="px-5 py-4 font-mono text-[12px] text-[var(--muted)]">{{ $ticket->messages_count }}</td>
                                 <td class="px-5 py-4">
-                                    <div class="font-mono text-[11.5px] text-[var(--muted)]">{{ $ticket->created_at?->format('d M Y') }}</div>
-                                    <div class="text-[10.5px] text-[var(--muted-strong)]">{{ $ticket->created_at?->format('H:i') }}</div>
+                                    <div class="font-mono text-[11.5px] text-[var(--muted)]">{{ $ticket->created_at?->inDisplayTz()->format('d M Y') }}</div>
+                                    <div class="text-[10.5px] text-[var(--muted-strong)]">{{ $ticket->created_at?->inDisplayTz()->format('H:i') }}</div>
                                 </td>
                             </tr>
                         @empty

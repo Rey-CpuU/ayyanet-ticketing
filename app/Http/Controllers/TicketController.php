@@ -10,27 +10,22 @@ use App\Models\Ticket;
 use App\Models\TicketAuditLog;
 use App\Models\TicketMessage;
 use App\Models\User;
-use App\Services\TicketNotifier;
 use App\Services\TicketWorkflow;
+use App\Support\DisplayTime;
+use App\Support\Search;
+use App\Support\TicketFilters;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TicketController extends Controller
 {
     /** Sort options for the ticket list: key => label. */
-    public const SORTS = [
-        'newest' => 'Terbaru',
-        'oldest' => 'Terlama',
-        'priority' => 'Prioritas tertinggi',
-        'sla' => 'SLA terdekat',
-        'updated' => 'Terakhir diperbarui',
-    ];
+    public const SORTS = TicketFilters::SORTS;
 
     /** Fields whose changes are written to the audit log on update. */
     private const AUDITED_FIELDS = ['title', 'description', 'priority', 'status', 'category', 'assigned_to'];
@@ -49,14 +44,7 @@ class TicketController extends Controller
     {
         $this->authorize('viewAny', Ticket::class);
 
-        $user = $request->user();
-        $query = Ticket::with(['customer', 'assignee']);
-
-        if ($user->hasRole('lapangan')) {
-            $query->visibleTo($user);
-        } else {
-            $query->where('created_by', $user->id);
-        }
+        $query = TicketFilters::onlyMine(Ticket::with(['customer', 'assignee']), $request->user());
 
         return $this->listView($request, $query, 'My Tickets', true);
     }
@@ -65,7 +53,12 @@ class TicketController extends Controller
     {
         $this->authorize('create', Ticket::class);
 
-        $selectedCustomer = Customer::find($request->old('customer_id', $request->query('customer_id')));
+        // Only a plain numeric id preselects a customer (?customer_id[]=1 or garbage is ignored);
+        // soft-deleted customers cannot be picked for a new ticket.
+        $customerId = $request->old('customer_id', $request->query('customer_id'));
+        $selectedCustomer = is_scalar($customerId) && ctype_digit((string) $customerId)
+            ? Customer::find((int) $customerId)
+            : null;
 
         return view('tickets.create', compact('selectedCustomer'));
     }
@@ -128,8 +121,11 @@ class TicketController extends Controller
 
     public function update(UpdateTicketRequest $request, Ticket $ticket, TicketWorkflow $workflow)
     {
-        $newStatus = TicketStatus::from($request->status ?? $ticket->status);
+        $newStatus = TicketStatus::from($request->validated('status') ?? $ticket->status);
         $resolutionNote = $request->validated('resolution_note');
+        // Field technicians (lapangan) may only change status, OLT/location and add notes;
+        // UpdateTicketRequest drops every other field from validated() for them.
+        $canEditDetails = $request->canEditDetails();
 
         if ($error = $workflow->transitionError($ticket, $newStatus, $resolutionNote)) {
             if ($request->expectsJson()) {
@@ -139,54 +135,64 @@ class TicketController extends Controller
             return back()->withErrors($error)->withInput();
         }
 
-        $updateData = $request->safe()->only([
-            'customer_id',
-            'title',
-            'description',
-            'category',
-            'olt',
-            'location',
-        ]);
+        $updateData = $request->safe()->only($canEditDetails
+            ? ['customer_id', 'title', 'description', 'category', 'olt', 'location']
+            : ['olt', 'location']);
 
-        if ($request->hasFile('attachment')) {
-            $this->deleteAttachment($ticket->attachment_path);
+        $oldAttachment = null;
+
+        if ($canEditDetails && $request->hasFile('attachment')) {
+            $oldAttachment = $ticket->attachment_path;
             $updateData['attachment_path'] = $this->storeAttachment($request->file('attachment'));
         }
 
+        $priority = $canEditDetails ? $request->validated('priority') : null;
         $actor = $request->user();
 
-        DB::transaction(function () use ($ticket, $updateData, $request, $newStatus, $resolutionNote, $workflow, $actor) {
-            $oldValues = $ticket->only(self::AUDITED_FIELDS);
+        try {
+            DB::transaction(function () use ($ticket, $updateData, $priority, $newStatus, $resolutionNote, $workflow, $actor) {
+                $oldValues = $ticket->only(self::AUDITED_FIELDS);
 
-            $ticket->update($updateData);
+                $ticket->update($updateData);
 
-            // Priority and status go through the workflow so SLA and the activity stream stay consistent.
-            if ($request->filled('priority')) {
-                $workflow->changePriority($ticket, $request->priority, $actor);
-            }
-
-            if ($newStatus !== $ticket->statusEnum()) {
-                $workflow->changeStatus($ticket, $newStatus, $resolutionNote, $actor);
-            } elseif ($newStatus->isResolved() && filled($resolutionNote) && $resolutionNote !== $ticket->resolution_note) {
-                $ticket->update(['resolution_note' => $resolutionNote]);
-            }
-
-            $newValues = $ticket->only(self::AUDITED_FIELDS);
-
-            foreach (self::AUDITED_FIELDS as $field) {
-                if ($oldValues[$field] !== $newValues[$field]) {
-                    TicketAuditLog::create([
-                        'ticket_id' => $ticket->id,
-                        'user_id' => $actor->id,
-                        'action' => 'updated',
-                        'old_value' => json_encode([$field => $oldValues[$field]]),
-                        'new_value' => json_encode([$field => $newValues[$field]]),
-                    ]);
+                // Priority and status go through the workflow so SLA, the activity stream and the
+                // notifications (incl. the customer email on a real status change) stay consistent.
+                if (filled($priority)) {
+                    $workflow->changePriority($ticket, $priority, $actor);
                 }
-            }
-        });
 
-        app(TicketNotifier::class)->customerUpdate($ticket, 'Status ticket diperbarui ke '.$newStatus->value);
+                if ($newStatus !== $ticket->statusEnum()) {
+                    $workflow->changeStatus($ticket, $newStatus, $resolutionNote, $actor);
+                } elseif ($newStatus->isResolved() && filled($resolutionNote) && $resolutionNote !== $ticket->resolution_note) {
+                    $ticket->update(['resolution_note' => $resolutionNote]);
+                }
+
+                $newValues = $ticket->only(self::AUDITED_FIELDS);
+
+                foreach (self::AUDITED_FIELDS as $field) {
+                    if ($oldValues[$field] !== $newValues[$field]) {
+                        // The model casts these columns to JSON, so arrays are passed (no json_encode).
+                        TicketAuditLog::create([
+                            'ticket_id' => $ticket->id,
+                            'user_id' => $actor->id,
+                            'action' => 'updated',
+                            'old_value' => [$field => $oldValues[$field]],
+                            'new_value' => [$field => $newValues[$field]],
+                        ]);
+                    }
+                }
+            });
+        } catch (\Throwable $e) {
+            // The row still points at the old file; drop the upload that never got attached.
+            if (isset($updateData['attachment_path'])) {
+                $this->deleteAttachment($updateData['attachment_path']);
+            }
+
+            throw $e;
+        }
+
+        // The replaced file is only removed once the new path is committed.
+        $this->deleteAttachment($oldAttachment);
 
         if ($request->expectsJson()) {
             $ticket->refresh();
@@ -194,7 +200,7 @@ class TicketController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Ticket berhasil diupdate',
-                'ticket' => $ticket->only(['id', 'title', 'description', 'status', 'priority', 'category', 'olt', 'location']),
+                'ticket' => $ticket->only(['id', 'title', 'description', 'status', 'priority', 'category', 'olt', 'location', 'resolution_note']),
                 'allowed_statuses' => array_column($ticket->statusEnum()->allowedTransitions(), 'value'),
             ]);
         }
@@ -259,24 +265,16 @@ class TicketController extends Controller
     {
         $this->authorize('viewAny', Ticket::class);
 
-        $q = Str::limit(trim((string) $request->query('q', '')), 100, '');
+        $q = Search::input($request, 'q');
 
         if ($q === '') {
             return response()->json([]);
         }
 
-        $term = '%'.$q.'%';
-
         $tickets = Ticket::visibleTo($request->user())
-            ->with(['customer:id,name,customer_id,phone', 'assignee:id,name'])
-            ->where(fn (Builder $query) => $query
-                ->where('ticket_number', 'like', $term)
-                ->orWhere('title', 'like', $term)
-                ->orWhere('category', 'like', $term)
-                ->orWhereHas('customer', fn (Builder $c) => $c
-                    ->where('name', 'like', $term)
-                    ->orWhere('customer_id', 'like', $term)
-                    ->orWhere('phone', 'like', $term)))
+            ->with(['customer:id,name,customer_id,phone,deleted_at', 'assignee:id,name'])
+            ->where(fn (Builder $query) => Search::whereContains($query, ['ticket_number', 'title', 'category'], $q)
+                ->orWhereHas('customer', fn (Builder $c) => Search::whereContains($c, ['name', 'customer_id', 'phone'], $q)))
             ->latest()
             ->latest('id')
             ->limit(10)
@@ -290,6 +288,7 @@ class TicketController extends Controller
                 'priority' => $t->priority,
                 'category' => $t->category,
                 'customer_name' => $t->customer->name ?? 'Unknown',
+                'customer_deleted' => (bool) $t->customer?->trashed(),
                 'customer_phone' => $t->customer->phone ?? null,
                 'customer_id' => $t->customer->customer_id ?? null,
                 'initial' => strtoupper(substr($t->customer->name ?? '?', 0, 2)),
@@ -311,7 +310,7 @@ class TicketController extends Controller
         $ticket->load([
             'customer',
             'assignee:id,name',
-            'messages' => fn ($query) => $query->with('user:id,name')->oldest('id'),
+            'messages' => fn ($query) => $query->with('user:id,name'), // chronological: see Ticket::messages()
             'activities' => fn ($query) => $query->with('user:id,name')->latest('id')->limit(30),
         ]);
 
@@ -330,7 +329,7 @@ class TicketController extends Controller
             'location' => $ticket->location,
             'customer_id' => $ticket->customer_id,
             'resolution_note' => $ticket->resolution_note,
-            'created_at' => $ticket->created_at?->format('d M Y, H:i'),
+            'created_at' => DisplayTime::format($ticket->created_at),
             'created_human' => $ticket->created_at?->diffForHumans(),
             'edit_url' => route('tickets.edit', $ticket),
             'show_url' => route('tickets.show', $ticket),
@@ -338,6 +337,7 @@ class TicketController extends Controller
             'message_url' => route('tickets.quick-message', $ticket),
             'customer' => [
                 'name' => $ticket->customer->name ?? '-',
+                'deleted' => (bool) $ticket->customer?->trashed(),
                 'customer_id' => $ticket->customer->customer_id ?? '-',
                 'phone' => $ticket->customer->phone ?? '-',
                 'address' => $ticket->customer->address ?? '-',
@@ -351,12 +351,13 @@ class TicketController extends Controller
                 'label' => $sla['label'],
                 'running' => $sla['running'],
                 'deadline' => $sla['deadline']->toIso8601String(),
-                'deadline_label' => $sla['deadline']->format('d M Y, H:i'),
+                'deadline_label' => DisplayTime::format($sla['deadline']),
             ] : null,
             'allowed_statuses' => array_column($ticket->statusEnum()->allowedTransitions(), 'value'),
             'categories' => array_values(array_unique(array_filter([...Ticket::CATEGORIES, $ticket->category]))),
             'can' => [
                 'update' => $user->can('update', $ticket),
+                'update_details' => $user->can('updateDetails', $ticket),
                 'reply' => $user->can('reply', $ticket),
                 'internal_note' => $user->can('addInternalNote', $ticket),
             ],
@@ -368,7 +369,7 @@ class TicketController extends Controller
                 'action_label' => $activity->label(),
                 'old_value' => $activity->old_value,
                 'new_value' => $activity->new_value,
-                'created_at' => $activity->created_at?->format('d M Y, H:i'),
+                'created_at' => DisplayTime::format($activity->created_at),
             ])->values(),
         ]);
     }
@@ -388,8 +389,8 @@ class TicketController extends Controller
             'user_initials' => strtoupper(substr($sender, 0, 2)),
             'is_internal' => (bool) $msg->is_internal,
             'message' => $msg->message,
-            'created_at' => $msg->created_at?->format('H:i'),
-            'date_str' => $msg->created_at?->format('d M Y, H:i'),
+            'created_at' => DisplayTime::format($msg->created_at, 'H:i'),
+            'date_str' => DisplayTime::format($msg->created_at),
         ];
     }
 
@@ -399,75 +400,23 @@ class TicketController extends Controller
     private function listView(Request $request, Builder $query, string $pageTitle, bool $showMyTicketsOnly)
     {
         $user = $request->user();
-        $filters = $this->listFilters($request);
+        $filters = TicketFilters::fromRequest($request);
+
         $query->withCount('messages');
-
-        if ($filters['trashed'] === 'with') {
-            $query->withTrashed();
-        } elseif ($filters['trashed'] === 'only') {
-            $query->onlyTrashed();
-        }
-
-        if ($filters['q'] !== '') {
-            $term = '%'.$filters['q'].'%';
-
-            $query->where(fn (Builder $q) => $q
-                ->where('ticket_number', 'like', $term)
-                ->orWhere('title', 'like', $term)
-                ->orWhereHas('customer', fn (Builder $c) => $c->where('name', 'like', $term)));
-        }
-
-        foreach (['status', 'priority', 'category'] as $field) {
-            if ($filters[$field] !== '') {
-                $query->where($field, $filters[$field]);
-            }
-        }
-
-        if ($filters['assigned_to'] === 'unassigned') {
-            $query->whereNull('assigned_to');
-        } elseif ($filters['assigned_to'] !== '') {
-            $query->where('assigned_to', (int) $filters['assigned_to']);
-        }
-
-        match ($filters['sort']) {
-            'oldest' => $query->oldest()->oldest('id'),
-            'priority' => $query->orderByRaw("CASE priority WHEN 'High' THEN 0 WHEN 'Medium' THEN 1 ELSE 2 END")->latest(),
-            'sla' => $query->orderByRaw('sla_deadline IS NULL')->orderBy('sla_deadline'),
-            'updated' => $query->latest('updated_at'),
-            default => $query->latest()->latest('id'),
-        };
+        TicketFilters::apply($query, $filters);
+        TicketFilters::sort($query, $filters['sort']);
 
         return view('tickets.index', [
             'tickets' => $query->paginate(15)->withQueryString(),
             'pageTitle' => $pageTitle,
             'showMyTicketsOnly' => $showMyTicketsOnly,
             'filters' => $filters,
+            // Export links carry the active filters (and the "my tickets" scope).
+            'exportParameters' => TicketFilters::queryParameters($filters) + ($showMyTicketsOnly ? ['mine' => '1'] : []),
             'categories' => Ticket::visibleTo($user)->whereNotNull('category')->distinct()->orderBy('category')->pluck('category'),
             'assignees' => User::whereIn('role', User::ROLES)->orderBy('name')->get(['id', 'name']),
             'sorts' => self::SORTS,
         ]);
-    }
-
-    /**
-     * Read list filters from the query string; unknown values are ignored instead of failing.
-     *
-     * @return array<string, string>
-     */
-    private function listFilters(Request $request): array
-    {
-        $pick = fn (string $key, array $allowed) => in_array($request->query($key), $allowed, true) ? $request->query($key) : '';
-        $assignedTo = (string) $request->query('assigned_to', '');
-
-        return [
-            'q' => Str::limit(trim((string) $request->query('q', '')), 100, ''),
-            'status' => $pick('status', Ticket::STATUSES),
-            'priority' => $pick('priority', Ticket::PRIORITIES),
-            'category' => is_string($request->query('category')) ? Str::limit($request->query('category'), 100, '') : '',
-            'assigned_to' => $assignedTo === 'unassigned' || ctype_digit($assignedTo) ? $assignedTo : '',
-            'sort' => $pick('sort', array_keys(self::SORTS)) ?: 'newest',
-            // Deleted tickets are only visible to admins.
-            'trashed' => $request->user()->isAdmin() ? $pick('trashed', ['with', 'only']) : '',
-        ];
     }
 
     private function storeAttachment(UploadedFile $file): string
