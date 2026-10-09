@@ -8,7 +8,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StatusBannerController;
-use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\TicketAssignmentController;
 use App\Http\Controllers\TicketAuditLogController;
 use App\Http\Controllers\TicketClassifyController;
@@ -17,15 +16,7 @@ use App\Http\Controllers\TicketExportController;
 use App\Http\Controllers\TicketMessageController;
 use App\Http\Controllers\TicketStatusController;
 use App\Http\Controllers\UserController;
-use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Route;
-
-// Telegram bot updates. Authenticated by the X-Telegram-Bot-Api-Secret-Token header (TELEGRAM_WEBHOOK_SECRET),
-// fail-closed outside local/testing. The web group uses PreventRequestForgery (Laravel 13), so exclude that class.
-Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])
-    ->withoutMiddleware([PreventRequestForgery::class])
-    ->middleware('throttle:120,1')
-    ->name('telegram.webhook');
 
 Route::get('/', function () {
     return redirect()->route('login');

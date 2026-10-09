@@ -1,6 +1,6 @@
 # 🎫 Ayyanet Ticketing System
 
-Sistem manajemen tiket keluhan & bantuan pelanggan (Helpdesk / CRM) berbasis Laravel dengan dukungan antarmuka modern, manajemen peran (Admin/Staf/Pelanggan), notifikasi real-time, serta integrasi Bot Telegram interaktif.
+Sistem manajemen tiket keluhan & bantuan pelanggan (Helpdesk / CRM) berbasis Laravel dengan dukungan antarmuka modern, manajemen peran (Admin/Staf/Pelanggan), notifikasi real-time, serta notifikasi otomatis ke grup Telegram staf.
 
 ---
 
@@ -10,13 +10,12 @@ Sistem manajemen tiket keluhan & bantuan pelanggan (Helpdesk / CRM) berbasis Lar
 - **Dashboard & Analisis**: Ringkasan tiket, visualisasi grafik status, serta panel riwayat tiket terakhir diakses (*Recently Visited*).
 - **Multi-Role & Akses**:
   - **Admin**: Akses penuh mengelola tiket, status banner, pengguna, dan konfigurasi sistem.
-  - **Customer Service (CS)**: Mencatat tiket dari pelanggan (Email, WhatsApp, Live Chat, Telegram) dan memantau penyelesaiannya.
+  - **Customer Service (CS)**: Mencatat tiket dari pelanggan (Email, WhatsApp, Live Chat) dan memantau penyelesaiannya.
   - **Teknisi Lapangan**: Menangani dan merespon tiket yang ditugaskan.
   - Sistem bersifat internal/privat: hanya staf yang dapat masuk; pelanggan tidak memiliki akun atau akses.
 - **Status Banner**: Pengumuman pemeliharaan atau gangguan layanan terpusat.
-- **Integrasi Bot Telegram**:
-  - Notifikasi otomatis ke grup/admin saat ada tiket baru atau pembaruan status.
-  - Bot interaktif (polling / webhook) untuk cek tiket dan update status langsung via chat Telegram.
+- **Notifikasi Grup Telegram**: Bot satu arah yang mengirim alert ke grup staf saat ada tiket baru,
+  perubahan status, atau penugasan tiket.
 - **Pesan Tiket**: Catatan dan pesan antar staf di dalam detail tiket (tidak ada chat publik untuk pelanggan).
 
 ---
@@ -78,49 +77,32 @@ Sistem manajemen tiket keluhan & bantuan pelanggan (Helpdesk / CRM) berbasis Lar
 
 ---
 
-## 🤖 Cara Menggunakan Bot Telegram
+## 🤖 Bot Notifikasi Grup Telegram
 
-Aplikasi ini mendukung dua mode operasional bot Telegram:
+Aplikasi mengirim notifikasi satu arah ke grup Telegram staf. Bot ini tidak menerima perintah atau
+chat; semua pengelolaan tiket dan customer dilakukan lewat aplikasi web.
 
 ### 1. Konfigurasi `.env`
-Tambahkan konfigurasi bot pada file `.env`:
+Buat bot lewat @BotFather, tambahkan bot ke grup staf, lalu isi:
 ```dotenv
-TELEGRAM_BOT_TOKEN="your_bot_token_from_botfather"
-TELEGRAM_ALLOWED_CHAT_IDS="12345678,87654321"
-TELEGRAM_DEFAULT_ADMIN_ID="12345678"
-
-# Untuk Notifikasi Grup/Channel
 TELEGRAM_NOTIF_BOT_TOKEN="your_notif_bot_token"
 TELEGRAM_NOTIF_GROUP_ID="-100xxxxxxxxx"
 TELEGRAM_NOTIF_ENABLED=true
 ```
+Notifikasi hanya aktif bila token dan group ID terisi serta `TELEGRAM_NOTIF_ENABLED` bernilai `true`.
 
-### 2. Menjalankan Bot di Lingkungan Lokal (Polling Mode)
-Untuk testing atau menjalankan bot di localhost tanpa perlu URL HTTPS publik:
+### 2. Kapan Notifikasi Dikirim
+Lewat `TicketNotifier` (setelah transaksi database selesai, sehingga kegagalan Telegram tidak
+membatalkan request):
+- Tiket baru dibuat.
+- Status tiket berubah.
+- Penanggung jawab tiket berubah.
+
+### 3. Menguji Notifikasi
 ```bash
-php artisan telegram:poll
+php artisan telegram:notif-test            # kirim ke TELEGRAM_NOTIF_GROUP_ID
+php artisan telegram:notif-test -100xxxxxxxxx  # atau ke chat ID tertentu
 ```
-
-### 3. Menguji Notifikasi Telegram
-Untuk memastikan konfigurasi notifikasi bot Telegram sudah benar:
-```bash
-php artisan telegram:notif-test
-```
-
-### 4. Mode Webhook (Production)
-Set `TELEGRAM_WEBHOOK_SECRET` (string acak) terlebih dahulu: Telegram akan mengirimkannya di header
-`X-Telegram-Bot-Api-Secret-Token` dan endpoint menolak request tanpa secret yang cocok. Lalu daftarkan
-webhook bot ke domain publik (HTTPS):
-```bash
-php artisan telegram:webhook set https://domain-anda.com/telegram/webhook
-```
-
-### 5. Hak Akses Bot
-- Hanya akun staf (`admin`, `cs`, `lapangan`) yang bisa login ke bot; percobaan password dibatasi
-  5x per 15 menit per chat.
-- Bot memakai policy yang sama dengan web: menambah customer dan membuat tiket hanya untuk `admin`/`cs`.
-- Tiket dari bot dibuat lewat alur yang sama dengan form web (`TicketWorkflow`): nomor `TKT-0001`,
-  SLA sesuai prioritas, activity log, serta notifikasi email/in-app/Telegram.
 
 ---
 

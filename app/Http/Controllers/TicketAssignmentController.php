@@ -21,7 +21,7 @@ class TicketAssignmentController extends Controller
 
         $assignee = isset($validated['assigned_to']) ? User::findOrFail($validated['assigned_to']) : null;
 
-        // The workflow logs the activity and notifies the new assignee (in-app + email) and Telegram.
+        // The workflow logs the activity and notifies the new assignee (in-app + email) and the Telegram group.
         $changed = $workflow->assign($ticket, $assignee, $request->user());
         $message = $changed ? 'Penanggung jawab ticket berhasil diperbarui.' : 'Penanggung jawab ticket tidak berubah.';
 

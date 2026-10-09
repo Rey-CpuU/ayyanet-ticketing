@@ -28,7 +28,7 @@ class UpdateTicketRequest extends FormRequest
             'status' => ['nullable', 'string', Rule::in(Ticket::STATUSES)],
             // Required when moving to Solved (or Closed without a prior resolution); see TicketWorkflow.
             'resolution_note' => ['nullable', 'string', 'max:2000'],
-            // Tickets created by the Telegram bot (or older data) may carry a topic category
+            // Older tickets (e.g. from the former Telegram bot) may carry a topic category
             // (Internet, Hardware, ...) outside the channel list; keeping it unchanged is allowed.
             'category' => ['nullable', 'string', Rule::in([...Ticket::CATEGORIES, $this->route('ticket')?->category])],
             'olt' => ['nullable', 'string', 'max:255'],
