@@ -67,13 +67,13 @@ test('tickets can be sorted', function () {
 });
 
 test('pagination keeps the query string', function () {
-    Ticket::factory()->count(20)->create(['category' => 'Portal']);
+    Ticket::factory()->count(20)->create(['category' => 'Live Chat']);
 
-    $response = $this->actingAs($this->cs)->get('/tickets?category=Portal&sort=oldest')->assertOk();
+    $response = $this->actingAs($this->cs)->get('/tickets?category=Live+Chat&sort=oldest')->assertOk();
 
     expect($response->viewData('tickets')->total())->toBe(20)
         ->and($response->viewData('tickets')->count())->toBe(15);
-    $response->assertSee('category=Portal&amp;sort=oldest&amp;page=2', false);
+    $response->assertSee('category=Live%20Chat&amp;sort=oldest&amp;page=2', false);
 });
 
 test('field technicians stay scoped to their own tickets while searching', function () {

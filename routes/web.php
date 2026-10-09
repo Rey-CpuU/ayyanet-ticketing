@@ -17,12 +17,13 @@ use App\Http\Controllers\TicketExportController;
 use App\Http\Controllers\TicketMessageController;
 use App\Http\Controllers\TicketStatusController;
 use App\Http\Controllers\UserController;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Route;
 
-// Telegram bot updates. Authenticated by the X-Telegram-Bot-Api-Secret-Token header (TELEGRAM_WEBHOOK_SECRET).
+// Telegram bot updates. Authenticated by the X-Telegram-Bot-Api-Secret-Token header (TELEGRAM_WEBHOOK_SECRET),
+// fail-closed outside local/testing. The web group uses PreventRequestForgery (Laravel 13), so exclude that class.
 Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])
-    ->withoutMiddleware([ValidateCsrfToken::class])
+    ->withoutMiddleware([PreventRequestForgery::class])
     ->middleware('throttle:120,1')
     ->name('telegram.webhook');
 
@@ -94,9 +95,11 @@ Route::middleware('auth')->group(function () {
         Route::resource('customers', CustomerController::class);
     });
 
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::middleware('role:admin,cs,lapangan')->group(function () {
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    });
 });
 
 require __DIR__.'/auth.php';

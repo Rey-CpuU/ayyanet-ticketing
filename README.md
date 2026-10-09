@@ -10,13 +10,14 @@ Sistem manajemen tiket keluhan & bantuan pelanggan (Helpdesk / CRM) berbasis Lar
 - **Dashboard & Analisis**: Ringkasan tiket, visualisasi grafik status, serta panel riwayat tiket terakhir diakses (*Recently Visited*).
 - **Multi-Role & Akses**:
   - **Admin**: Akses penuh mengelola tiket, status banner, pengguna, dan konfigurasi sistem.
-  - **Staff / Teknisi**: Menangani dan merespon tiket yang ditugaskan.
-  - **Customer / Pelanggan**: Membuat tiket baru dan memantau status penyelesaian masalah.
+  - **Customer Service (CS)**: Mencatat tiket dari pelanggan (Email, WhatsApp, Live Chat, Telegram) dan memantau penyelesaiannya.
+  - **Teknisi Lapangan**: Menangani dan merespon tiket yang ditugaskan.
+  - Sistem bersifat internal/privat: hanya staf yang dapat masuk; pelanggan tidak memiliki akun atau akses.
 - **Status Banner**: Pengumuman pemeliharaan atau gangguan layanan terpusat.
 - **Integrasi Bot Telegram**:
   - Notifikasi otomatis ke grup/admin saat ada tiket baru atau pembaruan status.
   - Bot interaktif (polling / webhook) untuk cek tiket dan update status langsung via chat Telegram.
-- **Fitur Live Chat / Message**: Diskusi dua arah antara staf dan pelanggan di dalam detail tiket.
+- **Pesan Tiket**: Catatan dan pesan antar staf di dalam detail tiket (tidak ada chat publik untuk pelanggan).
 
 ---
 

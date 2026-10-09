@@ -10,7 +10,5 @@ return [
         'email' => env('CHANNEL_EMAIL', true),
         'live_chat' => env('CHANNEL_LIVE_CHAT', true),
         'whatsapp' => env('CHANNEL_WHATSAPP', true),
-        'web_form' => env('CHANNEL_WEB_FORM', false),
-        'portal' => env('CHANNEL_PORTAL', true),
     ],
 ];

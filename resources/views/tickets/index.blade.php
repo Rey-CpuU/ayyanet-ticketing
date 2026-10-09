@@ -26,14 +26,6 @@
                     </svg>
                     PDF
                 </a>
-                @can('create', App\Models\Ticket::class)
-                    <a href="{{ route('tickets.create') }}" class="btn-primary">
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                            <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                        </svg>
-                        Tiket Baru
-                    </a>
-                @endcan
             </div>
         </div>
     </x-slot>

@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="font-display text-[17px] font-bold tracking-[-0.02em] text-[var(--foreground)]">Status Banners</h2>
-                <p class="mt-0.5 text-[12.5px] text-[var(--muted)]">{{ $banners->count() }} banner(s) — shown at the top of the portal</p>
+                <p class="mt-0.5 text-[12.5px] text-[var(--muted)]">{{ $banners->count() }} banner — tampil di bagian atas dashboard staf</p>
             </div>
             <a href="{{ route('status-banners.create') }}" class="btn-primary">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
