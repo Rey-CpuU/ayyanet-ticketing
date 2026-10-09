@@ -23,15 +23,33 @@ class TicketStatusController extends Controller
         $note = $validated['resolution_note'] ?? null;
 
         if ($ticket->statusEnum() === $to) {
-            return back()->with('success', 'Status ticket tidak berubah.');
+            return $this->respond($request, $ticket, 'Status ticket tidak berubah.');
         }
 
         if ($error = $workflow->transitionError($ticket, $to, $note)) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => collect($error)->flatten()->first(), 'errors' => $error], 422);
+            }
+
             return back()->withErrors($error)->withInput();
         }
 
         $workflow->changeStatus($ticket, $to, $note, $request->user());
 
-        return back()->with('success', "Status ticket diubah ke {$to->value}.");
+        return $this->respond($request, $ticket, "Status ticket diubah ke {$to->value}.");
+    }
+
+    private function respond(Request $request, Ticket $ticket, string $message)
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'status' => $ticket->status,
+                'allowed_statuses' => array_column($ticket->statusEnum()->allowedTransitions(), 'value'),
+            ]);
+        }
+
+        return back()->with('success', $message);
     }
 }

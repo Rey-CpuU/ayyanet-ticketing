@@ -71,12 +71,21 @@ Route::middleware('auth')->group(function () {
         Route::post('/tickets/classify', TicketClassifyController::class)
             ->middleware('throttle:ticket-classify')
             ->name('tickets.classify');
+        // Dashboard live search (debounced client-side); also registered before the resource.
+        Route::get('/tickets/live-search', [TicketController::class, 'liveSearch'])
+            ->middleware('throttle:ticket-classify')
+            ->name('tickets.live-search');
         Route::resource('tickets', TicketController::class)
             ->middlewareFor('store', 'throttle:ticket-writes');
         Route::get('/tickets/{ticket}/attachment', [TicketController::class, 'downloadAttachment'])->name('tickets.attachment');
         Route::patch('/tickets/{ticket}/assignee', TicketAssignmentController::class)->name('tickets.assignee.update');
         Route::patch('/tickets/{ticket}/status', TicketStatusController::class)->name('tickets.status.update');
         Route::get('/tickets/{ticket}/audit-log', [TicketAuditLogController::class, 'index'])->name('tickets.audit-log');
+        // Quick view modal + quick chat popover on the dashboard (JSON).
+        Route::get('/tickets/{ticket}/quick-details', [TicketController::class, 'quickDetails'])->name('tickets.quick-details');
+        Route::post('/tickets/{ticket}/quick-message', [TicketMessageController::class, 'quickStore'])
+            ->middleware('throttle:ticket-messages')
+            ->name('tickets.quick-message');
         Route::post('tickets/{ticket}/messages', [TicketMessageController::class, 'store'])
             ->middleware('throttle:ticket-messages')
             ->name('tickets.messages.store');

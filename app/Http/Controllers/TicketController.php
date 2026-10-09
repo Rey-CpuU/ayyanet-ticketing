@@ -8,10 +8,12 @@ use App\Http\Requests\UpdateTicketRequest;
 use App\Models\Customer;
 use App\Models\Ticket;
 use App\Models\TicketAuditLog;
+use App\Models\TicketMessage;
 use App\Models\User;
 use App\Services\TicketNotifier;
 use App\Services\TicketWorkflow;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -130,6 +132,10 @@ class TicketController extends Controller
         $resolutionNote = $request->validated('resolution_note');
 
         if ($error = $workflow->transitionError($ticket, $newStatus, $resolutionNote)) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => collect($error)->flatten()->first(), 'errors' => $error], 422);
+            }
+
             return back()->withErrors($error)->withInput();
         }
 
@@ -181,6 +187,17 @@ class TicketController extends Controller
         });
 
         app(TicketNotifier::class)->customerUpdate($ticket, 'Status ticket diperbarui ke '.$newStatus->value);
+
+        if ($request->expectsJson()) {
+            $ticket->refresh();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Ticket berhasil diupdate',
+                'ticket' => $ticket->only(['id', 'title', 'description', 'status', 'priority', 'category', 'olt', 'location']),
+                'allowed_statuses' => array_column($ticket->statusEnum()->allowedTransitions(), 'value'),
+            ]);
+        }
 
         return redirect()->route('tickets.show', $ticket->id)
             ->with('success', 'Ticket berhasil diupdate');
@@ -236,12 +253,154 @@ class TicketController extends Controller
     }
 
     /**
+     * Dashboard live search: up to 10 visible tickets matching number, title, category or customer.
+     */
+    public function liveSearch(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Ticket::class);
+
+        $q = Str::limit(trim((string) $request->query('q', '')), 100, '');
+
+        if ($q === '') {
+            return response()->json([]);
+        }
+
+        $term = '%'.$q.'%';
+
+        $tickets = Ticket::visibleTo($request->user())
+            ->with(['customer:id,name,customer_id,phone', 'assignee:id,name'])
+            ->where(fn (Builder $query) => $query
+                ->where('ticket_number', 'like', $term)
+                ->orWhere('title', 'like', $term)
+                ->orWhere('category', 'like', $term)
+                ->orWhereHas('customer', fn (Builder $c) => $c
+                    ->where('name', 'like', $term)
+                    ->orWhere('customer_id', 'like', $term)
+                    ->orWhere('phone', 'like', $term)))
+            ->latest()
+            ->latest('id')
+            ->limit(10)
+            ->get()
+            ->map(fn (Ticket $t) => [
+                'id' => $t->id,
+                'url' => route('tickets.show', $t),
+                'ticket_number' => $t->ticket_number,
+                'title' => $t->title,
+                'status' => $t->status,
+                'priority' => $t->priority,
+                'category' => $t->category,
+                'customer_name' => $t->customer->name ?? 'Unknown',
+                'customer_phone' => $t->customer->phone ?? null,
+                'customer_id' => $t->customer->customer_id ?? null,
+                'initial' => strtoupper(substr($t->customer->name ?? '?', 0, 2)),
+                'assignee_name' => $t->assignee->name ?? 'Belum ditugaskan',
+                'created_at' => $t->created_at?->diffForHumans(),
+            ]);
+
+        return response()->json($tickets);
+    }
+
+    /**
+     * JSON payload for the dashboard quick-view modal and quick-chat popover.
+     */
+    public function quickDetails(Request $request, Ticket $ticket): JsonResponse
+    {
+        $this->authorize('view', $ticket);
+
+        $ticket->touchVisited();
+        $ticket->load([
+            'customer',
+            'assignee:id,name',
+            'messages' => fn ($query) => $query->with('user:id,name')->oldest('id'),
+            'activities' => fn ($query) => $query->with('user:id,name')->latest('id')->limit(30),
+        ]);
+
+        $user = $request->user();
+        $sla = $ticket->slaSummary();
+
+        return response()->json([
+            'id' => $ticket->id,
+            'ticket_number' => $ticket->ticket_number,
+            'title' => $ticket->title,
+            'description' => $ticket->description,
+            'status' => $ticket->status,
+            'priority' => $ticket->priority,
+            'category' => $ticket->category,
+            'olt' => $ticket->olt,
+            'location' => $ticket->location,
+            'customer_id' => $ticket->customer_id,
+            'resolution_note' => $ticket->resolution_note,
+            'created_at' => $ticket->created_at?->format('d M Y, H:i'),
+            'created_human' => $ticket->created_at?->diffForHumans(),
+            'edit_url' => route('tickets.edit', $ticket),
+            'show_url' => route('tickets.show', $ticket),
+            'update_url' => route('tickets.update', $ticket),
+            'message_url' => route('tickets.quick-message', $ticket),
+            'customer' => [
+                'name' => $ticket->customer->name ?? '-',
+                'customer_id' => $ticket->customer->customer_id ?? '-',
+                'phone' => $ticket->customer->phone ?? '-',
+                'address' => $ticket->customer->address ?? '-',
+            ],
+            'assignee' => [
+                'id' => $ticket->assigned_to,
+                'name' => $ticket->assignee->name ?? 'Belum ditugaskan',
+            ],
+            'sla' => $sla ? [
+                'state' => $sla['state'],
+                'label' => $sla['label'],
+                'running' => $sla['running'],
+                'deadline' => $sla['deadline']->toIso8601String(),
+                'deadline_label' => $sla['deadline']->format('d M Y, H:i'),
+            ] : null,
+            'allowed_statuses' => array_column($ticket->statusEnum()->allowedTransitions(), 'value'),
+            'categories' => array_values(array_unique(array_filter([...Ticket::CATEGORIES, $ticket->category]))),
+            'can' => [
+                'update' => $user->can('update', $ticket),
+                'reply' => $user->can('reply', $ticket),
+                'internal_note' => $user->can('addInternalNote', $ticket),
+            ],
+            'messages' => $ticket->messages->map(fn ($msg) => self::messagePayload($msg))->values(),
+            'activities' => $ticket->activities->map(fn ($activity) => [
+                'id' => $activity->id,
+                'user_name' => $activity->user->name ?? 'Sistem',
+                'action' => $activity->action,
+                'action_label' => $activity->label(),
+                'old_value' => $activity->old_value,
+                'new_value' => $activity->new_value,
+                'created_at' => $activity->created_at?->format('d M Y, H:i'),
+            ])->values(),
+        ]);
+    }
+
+    /**
+     * Shape of a message in the quick view / quick chat JSON.
+     *
+     * @return array<string, mixed>
+     */
+    public static function messagePayload(TicketMessage $msg): array
+    {
+        $sender = $msg->user->name ?? 'Customer';
+
+        return [
+            'id' => $msg->id,
+            'user_name' => $sender,
+            'user_initials' => strtoupper(substr($sender, 0, 2)),
+            'is_internal' => (bool) $msg->is_internal,
+            'message' => $msg->message,
+            'created_at' => $msg->created_at?->format('H:i'),
+            'date_str' => $msg->created_at?->format('d M Y, H:i'),
+        ];
+    }
+
+    /**
      * Apply search, filters, sorting and pagination, and render the ticket list.
      */
     private function listView(Request $request, Builder $query, string $pageTitle, bool $showMyTicketsOnly)
     {
         $user = $request->user();
         $filters = $this->listFilters($request);
+        $query->withCount('messages');
 
         if ($filters['trashed'] === 'with') {
             $query->withTrashed();
