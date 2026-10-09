@@ -3,12 +3,16 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class SuspiciousLoginAlert extends Mailable
+/**
+ * Queued: the login request must not wait on SMTP. Carries no secrets.
+ */
+class SuspiciousLoginAlert extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

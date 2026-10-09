@@ -110,7 +110,7 @@ class TicketController extends Controller
         $attachmentAvailable = $this->attachmentDisk($ticket->attachment_path) !== null;
         $allowedStatuses = $ticket->statusEnum()->allowedTransitions();
         $assignableUsers = $request->user()->can('assign', $ticket)
-            ? User::whereIn('role', User::ROLES)->orderBy('name')->get(['id', 'name', 'role'])
+            ? User::active()->whereIn('role', User::ROLES)->orderBy('name')->get(['id', 'name', 'role'])
             : collect();
 
         return view('tickets.show', compact('ticket', 'attachmentAvailable', 'allowedStatuses', 'assignableUsers'));
@@ -443,7 +443,8 @@ class TicketController extends Controller
             'showMyTicketsOnly' => $showMyTicketsOnly,
             'filters' => $filters,
             'categories' => Ticket::visibleTo($user)->whereNotNull('category')->distinct()->orderBy('category')->pluck('category'),
-            'assignees' => User::whereIn('role', User::ROLES)->orderBy('name')->get(['id', 'name']),
+            // Filter list: deactivated accounts stay so their past tickets remain filterable.
+            'assignees' => User::whereIn('role', User::ROLES)->orderBy('name')->get(['id', 'name', 'deactivated_at']),
             'sorts' => self::SORTS,
         ]);
     }

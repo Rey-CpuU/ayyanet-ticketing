@@ -276,6 +276,10 @@
                                                                 ? 'border-dashed border-[var(--amber-text-50)] bg-[var(--amber-text-06)] text-[var(--amber-text)] fx-unassigned-pulse'
                                                                 : 'border-[var(--border-strong)] bg-[var(--surface-3)] text-[var(--foreground)]' }}">
                                                         <option value="" @selected($ticket->assigned_to === null)>Unassigned</option>
+                                                        @if ($ticket->assigned_to !== null && ! $assignableUsers->contains('id', $ticket->assigned_to))
+                                                            {{-- Current assignee was deactivated: shown, but cannot be picked again. --}}
+                                                            <option value="{{ $ticket->assigned_to }}" selected disabled>{{ $ticket->assignee->name ?? 'Akun' }} (nonaktif)</option>
+                                                        @endif
                                                         @foreach ($assignableUsers as $agent)
                                                             <option value="{{ $agent->id }}" @selected((int) $ticket->assigned_to === $agent->id)>{{ $agent->name }}</option>
                                                         @endforeach

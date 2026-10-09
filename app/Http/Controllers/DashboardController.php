@@ -43,7 +43,7 @@ class DashboardController extends Controller
 
         // Only admin/cs may reassign (TicketPolicy::assign); others get a read-only chip.
         $assignableUsers = $user->hasRole('admin', 'cs')
-            ? User::whereIn('role', User::ROLES)->orderBy('name')->get(['id', 'name', 'role'])
+            ? User::active()->whereIn('role', User::ROLES)->orderBy('name')->get(['id', 'name', 'role'])
             : collect();
 
         return view('dashboard', compact('tickets', 'stats', 'recentTickets', 'assignableUsers', 'filters'));

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Providers\AuthServiceProvider;
@@ -16,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SecurityHeadersMiddleware::class);
+
+        // Rejects sessions of accounts deactivated after they signed in.
+        $middleware->web(append: [EnsureUserIsActive::class]);
 
         $middleware->alias([
             'role' => RoleMiddleware::class,

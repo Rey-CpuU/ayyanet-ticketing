@@ -26,7 +26,7 @@ class TicketNotifier
     public function ticketCreated(Ticket $ticket, ?User $actor): void
     {
         $this->afterCommit('ticket created', function () use ($ticket, $actor) {
-            $staff = User::whereIn('role', ['admin', 'cs'])
+            $staff = User::active()->whereIn('role', ['admin', 'cs'])
                 ->when($actor, fn ($query) => $query->whereKeyNot($actor->id))
                 ->get();
 
@@ -45,7 +45,7 @@ class TicketNotifier
     {
         if (in_array($to, ['Solved', 'Closed'], true)) {
             $this->afterCommit('ticket resolved', function () use ($ticket) {
-                $admins = User::where('role', 'admin')->get();
+                $admins = User::active()->where('role', 'admin')->get();
 
                 foreach ($admins as $admin) {
                     Mail::to($admin)->queue(new TicketStatusChanged($ticket));

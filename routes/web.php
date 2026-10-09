@@ -40,7 +40,10 @@ Route::middleware('auth')->group(function () {
     // Admin-only: account management (public registration is closed) and destructive actions.
     Route::middleware('role:admin')->group(function () {
         Route::patch('/settings/users/{user}/role', [SettingsController::class, 'updateRole'])->name('settings.update-role');
-        Route::resource('users', UserController::class)->except('show');
+        // Accounts are deactivated, never deleted: tickets and messages keep referring to them.
+        Route::resource('users', UserController::class)->except(['show', 'destroy']);
+        Route::patch('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
+        Route::patch('/users/{user}/reactivate', [UserController::class, 'reactivate'])->name('users.reactivate');
         Route::post('/invitations/{invitation}/resend', [InvitationController::class, 'resend'])->name('invitations.resend');
         Route::patch('/tickets/{ticket}/restore', [TicketController::class, 'restore'])->withTrashed()->name('tickets.restore');
         Route::delete('/tickets/{ticket}/force-delete', [TicketController::class, 'forceDelete'])->withTrashed()->name('tickets.force-delete');
@@ -89,6 +92,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin,cs,lapangan')->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        // Self-deletion is disabled; this only answers stale forms with a friendly message.
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
 });
