@@ -23,7 +23,8 @@ class Ticket extends Model
 
     public const SLA_BREACHED = 'breached';
 
-    public const CATEGORIES = ['Email', 'Live Chat', 'WhatsApp', 'Web Form', 'Portal'];
+    // Intake channels recorded by staff. Legacy values (e.g. 'Web Form', 'Portal') may still exist on old rows.
+    public const CATEGORIES = ['Email', 'WhatsApp', 'Live Chat'];
 
     public const ATTACHMENT_MIMES = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'];
 

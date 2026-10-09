@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="font-display text-[17px] font-bold tracking-[-0.02em] text-[var(--foreground)]">Edit Banner</h2>
-                <p class="mt-0.5 text-[12.5px] text-[var(--muted)]">Update the alert shown at the top of the portal</p>
+                <p class="mt-0.5 text-[12.5px] text-[var(--muted)]">Perbarui pengumuman yang tampil di bagian atas dashboard staf</p>
             </div>
             <a href="{{ route('status-banners.index') }}" class="btn-secondary">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -49,7 +49,7 @@
                 <div class="flex items-end pb-1.5">
                     <label class="flex cursor-pointer items-center gap-2.5 text-[13px] font-medium text-[var(--foreground)]">
                         <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $statusBanner->is_active)) class="h-4 w-4 rounded border-[var(--border-strong)] bg-[var(--surface-2)] text-[var(--accent)] focus:ring-[var(--accent)]">
-                        Active (show on portal)
+                        Aktif (tampilkan di dashboard staf)
                     </label>
                 </div>
 

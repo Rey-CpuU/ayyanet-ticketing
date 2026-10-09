@@ -21,21 +21,27 @@ class TelegramWebhookController extends Controller
      */
     public function handle(Request $request): JsonResponse
     {
-        $secret = config('telegram.webhook_secret');
-        if (!empty($secret)) {
-            $incomingSecret = $request->header('X-Telegram-Bot-Api-Secret-Token');
-            if ($incomingSecret !== $secret) {
-                Log::warning('Telegram webhook invalid secret token received.');
+        $secret = (string) config('telegram.webhook_secret');
+
+        if ($secret === '') {
+            // Fail closed: without a configured secret the endpoint is only usable in local/testing.
+            if (! app()->environment(['local', 'testing'])) {
+                Log::warning('Telegram webhook rejected: TELEGRAM_WEBHOOK_SECRET is not configured.');
+
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
+        } elseif (! hash_equals($secret, (string) $request->header('X-Telegram-Bot-Api-Secret-Token', ''))) {
+            Log::warning('Telegram webhook invalid secret token received.');
+
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         $update = $request->all();
-        if (!empty($update)) {
+        if (! empty($update)) {
             try {
                 $this->conversationManager->handleUpdate($update);
             } catch (\Exception $e) {
-                Log::error('Telegram webhook handling exception: ' . $e->getMessage(), [
+                Log::error('Telegram webhook handling exception: '.$e->getMessage(), [
                     'exception' => $e,
                     'update' => $update,
                 ]);

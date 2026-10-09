@@ -48,7 +48,7 @@
                 <div class="flex items-end pb-1.5">
                     <label class="flex cursor-pointer items-center gap-2.5 text-[13px] font-medium text-[var(--foreground)]">
                         <input type="checkbox" name="is_active" value="1" @checked(old('is_active', true)) class="h-4 w-4 rounded border-[var(--border-strong)] bg-[var(--surface-2)] text-[var(--accent)] focus:ring-[var(--accent)]">
-                        Active (show on portal)
+                        Aktif (tampilkan di dashboard staf)
                     </label>
                 </div>
 

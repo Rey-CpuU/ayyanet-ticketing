@@ -30,8 +30,6 @@ class SettingsController extends Controller
                 'email' => ['enabled' => true, 'label' => 'Email'],
                 'live_chat' => ['enabled' => true, 'label' => 'Live Chat'],
                 'whatsapp' => ['enabled' => true, 'label' => 'WhatsApp'],
-                'web_form' => ['enabled' => false, 'label' => 'Web Form'],
-                'portal' => ['enabled' => true, 'label' => 'Portal'],
             ],
         ]);
     }
