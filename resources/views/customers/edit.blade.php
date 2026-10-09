@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tambah Customer</title>
+    <title>Edit Customer</title>
     <style>
         body {
             margin: 0;
@@ -112,28 +112,9 @@
         }
 
         .error-message {
-            margin-top: 6px;
+            margin-top: 12px;
             color: #fca5a5;
-            font-size: 13px;
-        }
-
-        .field-error input,
-        .field-error select,
-        .field-error textarea {
-            border-color: #f87171 !important;
-            box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.15);
-        }
-
-        .success-banner {
-            background: #166534;
-            color: #fff;
-            padding: 12px 16px;
-            border-radius: 10px;
-            margin-bottom: 18px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 700;
+            font-size: 14px;
         }
 
         .spinner {
@@ -164,7 +145,7 @@
 </head>
 <body>
     <div class="wrap">
-        <h2>Tambah Customer</h2>
+        <h2>Edit Customer</h2>
         <a href="{{ route('customers.index') }}" class="top-link">
             <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 4l-6 6 6 6M4 10h12" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Kembali ke Daftar Customer
@@ -172,57 +153,41 @@
 
         <div class="card">
             @if(session('success'))
-                <div class="success-banner">✅ {{ session('success') }}</div>
+                <div style="background:#166534; color:#fff; padding:12px 16px; border-radius:10px; margin-bottom:18px; display:flex; align-items:center; gap:10px; font-weight:700;">✅ {{ session('success') }}</div>
             @endif
 
             <x-notification />
 
-            <form action="{{ route('customers.store') }}" method="POST">
+            <form action="{{ route('customers.update', $customer->id) }}" method="POST">
                 @csrf
+                @method('PUT')
 
-                <label for="name">Nama <span style="color:#f87171;">*</span></label>
-                <div class="{{ $errors->has('name') ? 'field-error' : '' }}">
-                    <input type="text" name="name" id="name" value="{{ old('name') }}" required>
-                </div>
-                @error('name')
-                    <div class="error-message">{{ $message }}</div>
-                @enderror
+                <label for="name">Nama</label>
+                <input type="text" name="name" id="name" value="{{ old('name', $customer->name) }}" required>
 
                 <label for="email">Email</label>
-                <div class="{{ $errors->has('email') ? 'field-error' : '' }}">
-                    <input type="email" name="email" id="email" value="{{ old('email') }}">
-                </div>
-                @error('email')
-                    <div class="error-message">{{ $message }}</div>
-                @enderror
+                <input type="email" name="email" id="email" value="{{ old('email', $customer->email) }}">
 
-                <label for="phone">No HP <span style="color:#f87171;">*</span></label>
-                <div class="{{ $errors->has('phone') ? 'field-error' : '' }}">
-                    <input type="text" name="phone" id="phone" value="{{ old('phone') }}" required>
-                </div>
-                @error('phone')
-                    <div class="error-message">{{ $message }}</div>
-                @enderror
+                <label for="phone">No HP</label>
+                <input type="text" name="phone" id="phone" value="{{ old('phone', $customer->phone) }}" required>
 
-                <label for="address">Alamat <span style="color:#f87171;">*</span></label>
-                <div class="{{ $errors->has('address') ? 'field-error' : '' }}">
-                    <textarea name="address" id="address" required>{{ old('address') }}</textarea>
-                </div>
-                @error('address')
-                    <div class="error-message">{{ $message }}</div>
-                @enderror
+                <label for="address">Alamat</label>
+                <textarea name="address" id="address" required>{{ old('address', $customer->address) }}</textarea>
 
                 <label for="package">Paket Internet</label>
-                <div class="{{ $errors->has('package') ? 'field-error' : '' }}">
-                    <input type="text" name="package" id="package" value="{{ old('package') }}">
-                </div>
-                @error('package')
-                    <div class="error-message">{{ $message }}</div>
-                @enderror
+                <input type="text" name="package" id="package" value="{{ old('package', $customer->package) }}">
+
+                @if ($errors->any())
+                    <div class="error-message">
+                        @foreach ($errors->all() as $error)
+                            <div>{{ $error }}</div>
+                        @endforeach
+                    </div>
+                @endif
 
                 <button type="submit" id="submit-btn">
                     <span class="spinner"></span>
-                    Simpan Customer
+                    Update Customer
                 </button>
             </form>
         </div>

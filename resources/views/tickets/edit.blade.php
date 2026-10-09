@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Ticket</title>
+    <title>Edit Ticket</title>
     <style>
         body {
             margin: 0;
@@ -160,48 +160,26 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-
-        .suggestion {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-top: 12px;
-            padding: 10px 14px;
-            border-radius: 12px;
-            background: rgba(139, 92, 246, 0.1);
-            border: 1px solid rgba(139, 92, 246, 0.3);
-            color: #c4b5fd;
-            font-size: 14px;
-        }
-
-        .suggestion[hidden] { display: none; }
-
-        .suggestion .suggestion-apply {
-            width: auto;
-            margin: 0;
-            padding: 6px 12px;
-            font-size: 13px;
-        }
     </style>
 </head>
 <body>
     <div class="wrap">
-        <h2>New Ticket</h2>
-        <a href="{{ route('dashboard') }}" class="top-link">
+        <h2>Edit Ticket</h2>
+        <a href="{{ route('tickets.show', $ticket->id) }}" class="top-link">
             <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 4l-6 6 6 6M4 10h12" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Kembali ke Dashboard
+            Kembali ke Detail
         </a>
 
         <div class="card">
-        @if(session('success'))
-            <div class="success-banner">✅ {{ session('success') }}</div>
-        @endif
+            @if(session('success'))
+                <div class="success-banner">✅ {{ session('success') }}</div>
+            @endif
 
-        <x-notification />
+            <x-notification />
 
-            <form action="{{ route('tickets.store') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('tickets.update', $ticket->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
+                @method('PUT')
 
                 <label for="customer_search">Customer <span style="color:#f87171;">*</span></label>
                 <div class="{{ $errors->has('customer_id') ? 'field-error' : '' }}">
@@ -213,7 +191,7 @@
 
                 <label for="title">Judul Tiket <span style="color:#f87171;">*</span></label>
                 <div class="{{ $errors->has('title') ? 'field-error' : '' }}">
-                    <input type="text" name="title" id="title" placeholder="Masukkan judul tiket" value="{{ old('title') }}" required>
+                    <input type="text" name="title" id="title" placeholder="Masukkan judul tiket" value="{{ old('title', $ticket->title) }}" required>
                 </div>
                 @error('title')
                     <div class="error-message">{{ $message }}</div>
@@ -222,10 +200,9 @@
                 <label for="category">Kategori</label>
                 <div class="{{ $errors->has('category') ? 'field-error' : '' }}">
                     <select name="category" id="category">
-                        <option value="Email" {{ old('category') == 'Email' ? 'selected' : '' }}>Email</option>
-                        <option value="Portal" {{ old('category') == 'Portal' ? 'selected' : '' }}>Portal</option>
-                        <option value="WhatsApp" {{ old('category') == 'WhatsApp' ? 'selected' : '' }}>WhatsApp</option>
-                        <option value="Live Chat" {{ old('category') == 'Live Chat' ? 'selected' : '' }}>Live Chat</option>
+                        @foreach(['Email', 'Portal', 'WhatsApp', 'Live Chat', 'Web Form'] as $cat)
+                            <option value="{{ $cat }}" {{ old('category', $ticket->category) == $cat ? 'selected' : '' }}>{{ $cat }}</option>
+                        @endforeach
                     </select>
                 </div>
                 @error('category')
@@ -235,9 +212,9 @@
                 <label for="priority">Prioritas</label>
                 <div class="{{ $errors->has('priority') ? 'field-error' : '' }}">
                     <select name="priority" id="priority">
-                        <option value="Low" {{ old('priority') == 'Low' ? 'selected' : '' }}>Low</option>
-                        <option value="Medium" {{ old('priority', 'Medium') == 'Medium' ? 'selected' : '' }}>Medium</option>
-                        <option value="High" {{ old('priority') == 'High' ? 'selected' : '' }}>High</option>
+                        @foreach(['Low', 'Medium', 'High'] as $pri)
+                            <option value="{{ $pri }}" {{ old('priority', $ticket->priority) == $pri ? 'selected' : '' }}>{{ $pri }}</option>
+                        @endforeach
                     </select>
                 </div>
                 @error('priority')
@@ -247,9 +224,8 @@
                 <label for="impact">Dampak</label>
                 <div class="{{ $errors->has('impact') ? 'field-error' : '' }}">
                     <select name="impact" id="impact">
-                        <option value="">Otomatis (deteksi dari judul &amp; deskripsi)</option>
                         @foreach(App\Models\Ticket::IMPACTS as $impact)
-                            <option value="{{ $impact }}" {{ old('impact') == $impact ? 'selected' : '' }}>{{ $impact }}</option>
+                            <option value="{{ $impact }}" {{ old('impact', $ticket->impact) == $impact ? 'selected' : '' }}>{{ $impact }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -257,14 +233,47 @@
                     <div class="error-message">{{ $message }}</div>
                 @enderror
 
-                <div id="classify-suggestion" class="suggestion" hidden>
-                    <span>Saran otomatis: <strong id="classify-text"></strong></span>
-                    <button type="button" id="classify-apply" class="suggestion-apply">Terapkan</button>
+                <label for="status">Status</label>
+                <div class="{{ $errors->has('status') ? 'field-error' : '' }}">
+                    <select name="status" id="status">
+                        @foreach($statusOptions as $stat)
+                            <option value="{{ $stat->value }}" {{ old('status', $ticket->status) == $stat->value ? 'selected' : '' }}>{{ $stat->value }}</option>
+                        @endforeach
+                    </select>
                 </div>
+                @error('status')
+                    <div class="error-message">{{ $message }}</div>
+                @enderror
+
+                <div id="resolution-note-field">
+                    <label for="resolution_note">Catatan Penyelesaian</label>
+                    <div class="{{ $errors->has('resolution_note') ? 'field-error' : '' }}">
+                        <textarea name="resolution_note" id="resolution_note" style="min-height: 90px;" placeholder="Wajib diisi saat status Solved (atau Closed tanpa penyelesaian)">{{ old('resolution_note', $ticket->resolution_note) }}</textarea>
+                    </div>
+                    @error('resolution_note')
+                        <div class="error-message">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <label for="olt">OLT</label>
+                <div class="{{ $errors->has('olt') ? 'field-error' : '' }}">
+                    <input type="text" name="olt" id="olt" placeholder="Nama OLT (opsional)" value="{{ old('olt', $ticket->olt) }}">
+                </div>
+                @error('olt')
+                    <div class="error-message">{{ $message }}</div>
+                @enderror
+
+                <label for="location">Lokasi</label>
+                <div class="{{ $errors->has('location') ? 'field-error' : '' }}">
+                    <input type="text" name="location" id="location" placeholder="Lokasi (opsional)" value="{{ old('location', $ticket->location) }}">
+                </div>
+                @error('location')
+                    <div class="error-message">{{ $message }}</div>
+                @enderror
 
                 <label for="description">Deskripsi <span style="color:#f87171;">*</span></label>
                 <div class="{{ $errors->has('description') ? 'field-error' : '' }}">
-                    <textarea name="description" id="description" placeholder="Jelaskan masalah pelanggan..." required>{{ old('description') }}</textarea>
+                    <textarea name="description" id="description" placeholder="Jelaskan masalah pelanggan..." required>{{ old('description', $ticket->description) }}</textarea>
                 </div>
                 @error('description')
                     <div class="error-message">{{ $message }}</div>
@@ -278,9 +287,15 @@
                     <div class="error-message">{{ $message }}</div>
                 @enderror
 
+                @if($ticket->attachment_path)
+                    <div style="margin-top: 10px; padding: 10px; background: rgba(139, 92, 246, 0.1); border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.3);">
+                        <span style="font-size: 0.85rem; color: #c4b5fd;">📎 File saat ini: {{ basename($ticket->attachment_path) }}</span>
+                    </div>
+                @endif
+
                 <button type="submit" id="submit-btn">
                     <span class="spinner"></span>
-                    Simpan Ticket
+                    Update Ticket
                 </button>
             </form>
         </div>
@@ -293,58 +308,6 @@
                 btn.classList.add('loading');
             }
         });
-
-        // Ask the classifier for priority/impact suggestions while the agent types.
-        (function () {
-            const form = document.querySelector('form');
-            const title = document.getElementById('title');
-            const description = document.getElementById('description');
-            const box = document.getElementById('classify-suggestion');
-            const text = document.getElementById('classify-text');
-            const apply = document.getElementById('classify-apply');
-            let timer = null;
-            let suggestion = null;
-
-            const classify = function () {
-                if (title.value.trim().length < 5) {
-                    box.hidden = true;
-                    return;
-                }
-
-                fetch(@json(route('tickets.classify')), {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': form.querySelector('input[name="_token"]').value,
-                    },
-                    body: JSON.stringify({ title: title.value, description: description.value }),
-                })
-                    .then(function (res) { return res.ok ? res.json() : null; })
-                    .then(function (data) {
-                        if (!data) return;
-                        suggestion = data;
-                        text.textContent = 'Prioritas ' + data.priority + ' · Dampak ' + data.impact + ' · Topik ' + data.category;
-                        box.hidden = false;
-                    })
-                    .catch(function () {});
-            };
-
-            const schedule = function () {
-                clearTimeout(timer);
-                timer = setTimeout(classify, 600);
-            };
-
-            title?.addEventListener('input', schedule);
-            description?.addEventListener('input', schedule);
-
-            apply?.addEventListener('click', function () {
-                if (!suggestion) return;
-                document.getElementById('priority').value = suggestion.priority;
-                document.getElementById('impact').value = suggestion.impact;
-            });
-        })();
     </script>
 </body>
 </html>

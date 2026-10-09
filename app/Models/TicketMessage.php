@@ -1,25 +1,36 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Models;
 
-use Illuminate\Http\Request;
-use App\Models\TicketMessage;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
-class TicketMessageController extends Controller
+class TicketMessage extends Model
 {
-    public function store(Request $request, $ticketId)
+    use HasFactory;
+
+    protected $fillable = [
+        'ticket_id',
+        'user_id',
+        'message',
+        'is_internal',
+        'type',
+    ];
+
+    protected function casts(): array
     {
-        $request->validate([
-            'message' => 'required|string',
-        ]);
+        return [
+            'is_internal' => 'boolean',
+        ];
+    }
 
-        // Simpan pesan ke database
-        TicketMessage::create([
-            'ticket_id' => $ticketId,
-            'user_id'   => null, // Nanti diisi Auth::id() kalau fitur Login udah aktif
-            'message'   => $request->message,
-        ]);
+    public function ticket()
+    {
+        return $this->belongsTo(Ticket::class);
+    }
 
-        return back()->with('success', 'Pesan berhasil dikirim!');
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }
