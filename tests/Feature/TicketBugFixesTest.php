@@ -214,5 +214,5 @@ test('dashboard recent tickets returns five filtered tickets', function () {
     expect($response->viewData('recentTickets'))->toHaveCount(5);
     expect($response->viewData('recentTickets')->pluck('status')->unique()->all())->toBe(['Open']);
     expect($response->viewData('tickets'))->toHaveCount(7);
-    expect(collect($response->viewData('monthlyStats'))->last()['count'])->toBe(12);
+    expect($response->viewData('stats')['total'])->toBe(12);
 });

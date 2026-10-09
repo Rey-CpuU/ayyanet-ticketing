@@ -113,6 +113,38 @@ class Ticket extends Model
     }
 
     /**
+     * Display state of the SLA clock, shared by the ticket page, the dashboard and the quick view.
+     *
+     * "remaining" is the frozen number of seconds left while the clock is paused, null otherwise.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function slaSummary(): ?array
+    {
+        if (! $this->sla_deadline) {
+            return null;
+        }
+
+        $paused = $this->isSlaPaused();
+
+        [$state, $label] = match (true) {
+            $this->sla_status === self::SLA_MET => ['met', 'Terpenuhi'],
+            $this->sla_status === self::SLA_BREACHED, ! $paused && $this->sla_deadline->isPast() => ['breached', 'Terlampaui'],
+            $paused => ['paused', 'Dijeda'],
+            default => ['active', 'Berjalan'],
+        };
+
+        return [
+            'state' => $state,
+            'label' => $label,
+            'running' => ! $this->statusEnum()->isResolved() && ! $paused,
+            'deadline' => $this->sla_deadline,
+            // While paused the remaining time is frozen at the moment the clock stopped.
+            'remaining' => $paused ? (int) $this->sla_paused_at->diffInSeconds($this->sla_deadline, false) : null,
+        ];
+    }
+
+    /**
      * Restrict a query to the tickets the given user may see: field technicians (lapangan)
      * only see tickets assigned to or created by them; other staff see everything.
      */

@@ -1,179 +1,82 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reports</title>
-    <style>
-        body { margin: 0; font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; }
-        .wrap { max-width: 1100px; margin: 40px auto; padding: 24px; }
-        .card { background: #111827; border: 1px solid #2b3448; border-radius: 16px; padding: 24px; margin-top: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 16px; }
-        .metric { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 18px; }
-        .small { color: #94a3b8; font-size: 12px; }
-        .big { font-size: 28px; font-weight: 700; margin-top: 10px; }
-        a { color: #c4b5fd; text-decoration: none; font-weight: 700; }
-
-        .filter-form {
-            display: flex;
-            gap: 12px;
-            align-items: flex-end;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-
-        .filter-form label {
-            display: block;
-            font-size: 12px;
-            color: #94a3b8;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .filter-form input {
-            padding: 10px 14px;
-            border-radius: 10px;
-            border: 1px solid #374151;
-            background: #0f172a;
-            color: #e2e8f0;
-            font-size: 14px;
-        }
-
-        .filter-form button {
-            padding: 10px 18px;
-            border-radius: 10px;
-            border: 1px solid rgba(139, 92, 246, 0.4);
-            background: rgba(139, 92, 246, 0.2);
-            color: #e9ddff;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .bar-grid {
-            display: flex;
-            align-items: flex-end;
-            gap: 12px;
-            height: 160px;
-            margin-top: 16px;
-        }
-
-        .bar {
-            flex: 1;
-            background: linear-gradient(180deg, #8b5cf6, #6d58d1);
-            border-radius: 8px 8px 0 0;
-            min-height: 8px;
-            position: relative;
-        }
-
-        .bar-label {
-            text-align: center;
-            margin-top: 8px;
-            font-size: 12px;
-            color: #94a3b8;
-        }
-    </style>
-</head>
-<body>
-    <div class="wrap">
-        <h2>Reports</h2>
-        <a href="{{ route('dashboard') }}">← Kembali ke Dashboard</a>
-
-        <div class="card">
-            <form method="GET" action="{{ route('reports.index') }}" class="filter-form">
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h2 class="font-display text-[17px] font-bold tracking-[-0.02em] text-[var(--foreground)]">Laporan</h2>
+                <p class="mt-0.5 text-[12.5px] text-[var(--muted)]">Ringkasan tiket per periode</p>
+            </div>
+            <form method="GET" action="{{ route('reports.index') }}" class="flex flex-wrap items-end gap-2">
                 <div>
-                    <label for="from">Dari Tanggal</label>
-                    <input type="date" id="from" name="from" value="{{ $from }}">
+                    <label for="from" class="label">Dari Tanggal</label>
+                    <input type="date" id="from" name="from" value="{{ $from }}" class="input py-1.5">
                 </div>
                 <div>
-                    <label for="to">Sampai Tanggal</label>
-                    <input type="date" id="to" name="to" value="{{ $to }}">
+                    <label for="to" class="label">Sampai Tanggal</label>
+                    <input type="date" id="to" name="to" value="{{ $to }}" class="input py-1.5">
                 </div>
-                <button type="submit">Filter</button>
+                <button type="submit" class="btn-primary">Filter</button>
+                @if ($from || $to)
+                    <a href="{{ route('reports.index') }}" class="btn-secondary">Reset</a>
+                @endif
             </form>
         </div>
+    </x-slot>
 
-        <div class="card">
-            <div class="grid">
-                <div class="metric">
-                    <div class="small">Total Tickets</div>
-                    <div class="big">{{ $metrics['total'] }}</div>
+    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        @php
+            $cards = [
+                ['label' => 'Total Tickets', 'value' => $metrics['total'], 'class' => 'text-[var(--foreground)]', 'dot' => 'bg-[var(--foreground)]'],
+                ['label' => 'Open', 'value' => $metrics['open'], 'class' => 'text-[var(--red-bright)]', 'dot' => 'bg-[var(--red-bright)]'],
+                ['label' => 'In Progress', 'value' => $metrics['in_progress'], 'class' => 'text-[var(--violet-text)]', 'dot' => 'bg-[var(--violet-text)]'],
+                ['label' => 'Escalated', 'value' => $metrics['escalated'], 'class' => 'text-[var(--orange-text)]', 'dot' => 'bg-[var(--orange-text)]'],
+                ['label' => 'Solved', 'value' => $metrics['solved'], 'class' => 'text-[var(--green-text)]', 'dot' => 'bg-[var(--green-text)]'],
+                ['label' => 'Closed', 'value' => $metrics['closed'], 'class' => 'text-[var(--slate-text)]', 'dot' => 'bg-[var(--slate-text)]'],
+                ['label' => 'High Priority', 'value' => $metrics['high_priority'], 'class' => 'text-[var(--amber-text)]', 'dot' => 'bg-[var(--amber-text)]'],
+                ['label' => 'Avg Resolution (h)', 'value' => number_format($metrics['avg_resolution'], 1), 'class' => 'text-[var(--accent)]', 'dot' => 'bg-[var(--accent)]'],
+            ];
+            $breakdowns = [
+                'Tickets by Channel' => $byChannel,
+                'Tickets by Priority' => $byPriority,
+                'Tickets by Status' => $byStatus,
+            ];
+        @endphp
+
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            @foreach ($cards as $card)
+                <div class="card rounded-lg p-4">
+                    <div class="mb-2 flex items-center gap-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full {{ $card['dot'] }}"></span>
+                        <span class="truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">{{ $card['label'] }}</span>
+                    </div>
+                    <div class="fx-glow-text font-display text-[24px] font-bold leading-none {{ $card['class'] }}">{{ $card['value'] }}</div>
                 </div>
-                <div class="metric">
-                    <div class="small">Open</div>
-                    <div class="big">{{ $metrics['open'] }}</div>
-                </div>
-                <div class="metric">
-                    <div class="small">In Progress</div>
-                    <div class="big">{{ $metrics['in_progress'] }}</div>
-                </div>
-                <div class="metric">
-                    <div class="small">Solved</div>
-                    <div class="big">{{ $metrics['solved'] }}</div>
-                </div>
-                <div class="metric">
-                    <div class="small">Closed</div>
-                    <div class="big">{{ $metrics['closed'] }}</div>
-                </div>
-                <div class="metric">
-                    <div class="small">Escalated</div>
-                    <div class="big">{{ $metrics['escalated'] }}</div>
-                </div>
-                <div class="metric">
-                    <div class="small">High Priority</div>
-                    <div class="big">{{ $metrics['high_priority'] }}</div>
-                </div>
-                <div class="metric">
-                    <div class="small">Avg Resolution (h)</div>
-                    <div class="big">{{ number_format($metrics['avg_resolution'], 1) }}</div>
-                </div>
-            </div>
+            @endforeach
         </div>
 
-        <div class="card">
-            <h3 style="margin: 0 0 16px; font-size: 1.1rem;">Tickets by Channel</h3>
-            @php
-                $maxChannel = $byChannel->max() ?: 1;
-            @endphp
-            <div class="bar-grid">
-                @foreach($byChannel as $channel => $count)
-                    <div>
-                        <div class="bar" style="height: {{ ($count / $maxChannel) * 100 }}%;"></div>
-                        <div class="bar-label">{{ ucfirst($channel) }}<br><strong>{{ $count }}</strong></div>
+        <div class="mt-6 grid gap-6 lg:grid-cols-3">
+            @foreach ($breakdowns as $title => $rows)
+                @php $max = $rows->max() ?: 1; @endphp
+                <div class="card overflow-hidden">
+                    <div class="border-b border-[var(--border)] px-5 py-4">
+                        <h3 class="font-display text-[14px] font-bold tracking-[-0.01em] text-[var(--foreground)]">{{ $title }}</h3>
                     </div>
-                @endforeach
-            </div>
-        </div>
-
-        <div class="card">
-            <h3 style="margin: 0 0 16px; font-size: 1.1rem;">Tickets by Priority</h3>
-            @php
-                $maxPriority = $byPriority->max() ?: 1;
-            @endphp
-            <div class="bar-grid">
-                @foreach($byPriority as $priority => $count)
-                    <div>
-                        <div class="bar" style="height: {{ ($count / $maxPriority) * 100 }}%;"></div>
-                        <div class="bar-label">{{ ucfirst($priority) }}<br><strong>{{ $count }}</strong></div>
+                    <div class="space-y-3 px-5 py-4">
+                        @forelse ($rows as $label => $count)
+                            <div>
+                                <div class="mb-1 flex items-center justify-between text-[12px]">
+                                    <span class="text-[var(--foreground)]">{{ $label !== '' ? ucfirst($label) : '—' }}</span>
+                                    <span class="font-mono font-semibold text-[var(--muted)]">{{ $count }}</span>
+                                </div>
+                                <div class="h-1.5 overflow-hidden rounded-full bg-[var(--surface-3)]">
+                                    <div class="h-full rounded-full bg-[var(--accent)]" style="width: {{ round($count / $max * 100) }}%"></div>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="py-6 text-center text-[12.5px] text-[var(--muted)]">Belum ada data.</p>
+                        @endforelse
                     </div>
-                @endforeach
-            </div>
-        </div>
-
-        <div class="card">
-            <h3 style="margin: 0 0 16px; font-size: 1.1rem;">Tickets by Status</h3>
-            @php
-                $maxStatus = $byStatus->max() ?: 1;
-            @endphp
-            <div class="bar-grid">
-                @foreach($byStatus as $status => $count)
-                    <div>
-                        <div class="bar" style="height: {{ ($count / $maxStatus) * 100 }}%;"></div>
-                        <div class="bar-label">{{ ucfirst($status) }}<br><strong>{{ $count }}</strong></div>
-                    </div>
-                @endforeach
-            </div>
+                </div>
+            @endforeach
         </div>
     </div>
-</body>
-</html>
+</x-app-layout>

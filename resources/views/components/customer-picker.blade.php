@@ -6,7 +6,7 @@
     <input
         type="text"
         id="{{ $inputId }}"
-        class="cp-input"
+        class="cp-input input"
         placeholder="Cari nama, no HP, email, atau ID customer..."
         value="{{ $selected ? $selected->name.' - '.$selected->phone : '' }}"
         autocomplete="off"
@@ -33,21 +33,22 @@
             list-style: none;
             max-height: 260px;
             overflow-y: auto;
-            background: #0f172a;
-            border: 1px solid #374151;
+            background: var(--surface-2);
+            border: 1px solid var(--border-strong);
             border-radius: 12px;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
         }
         .customer-picker .cp-list li {
             padding: 10px 12px;
             border-radius: 8px;
             cursor: pointer;
-            color: #e2e8f0;
+            font-size: 13px;
+            color: var(--foreground);
         }
         .customer-picker .cp-list li[aria-selected="true"],
-        .customer-picker .cp-list li:hover { background: rgba(139, 92, 246, 0.18); }
-        .customer-picker .cp-list li.cp-empty { cursor: default; color: #94a3b8; background: none; }
-        .customer-picker .cp-meta { display: block; margin-top: 2px; font-size: 12px; color: #94a3b8; }
+        .customer-picker .cp-list li:hover { background: var(--accent-soft); }
+        .customer-picker .cp-list li.cp-empty { cursor: default; color: var(--muted); background: none; }
+        .customer-picker .cp-meta { display: block; margin-top: 2px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function () {

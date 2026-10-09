@@ -87,11 +87,19 @@ class CustomerController extends Controller
             ->with('success', 'Customer berhasil ditambahkan.');
     }
 
-    public function show(Customer $customer)
+    public function show(Request $request, Customer $customer)
     {
         $this->authorize('view', $customer);
 
-        return view('customers.show', compact('customer'));
+        // Ticket history is limited to the tickets the viewer may open (lapangan: own tickets only).
+        $tickets = $customer->tickets()
+            ->visibleTo($request->user())
+            ->with('assignee:id,name')
+            ->latest()
+            ->latest('id')
+            ->get();
+
+        return view('customers.show', compact('customer', 'tickets'));
     }
 
     public function edit(Customer $customer)
