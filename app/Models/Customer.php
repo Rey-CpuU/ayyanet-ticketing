@@ -46,25 +46,6 @@ class Customer extends Model
         return 'C-'.str_pad((string) $id, 4, '0', STR_PAD_LEFT);
     }
 
-    /**
-     * Phone number masked for display in shared channels (e.g. 0812****890).
-     */
-    public function getMaskedPhoneAttribute(): string
-    {
-        if (empty($this->phone)) {
-            return '—';
-        }
-
-        $phone = preg_replace('/[^\d+]/', '', $this->phone);
-        $len = strlen($phone);
-
-        if ($len <= 6) {
-            return $this->phone;
-        }
-
-        return substr($phone, 0, 4).str_repeat('*', max(3, $len - 7)).substr($phone, -3);
-    }
-
     public function tickets()
     {
         return $this->hasMany(Ticket::class);
