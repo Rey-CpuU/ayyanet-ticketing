@@ -23,6 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
+            // SQLite cannot drop a column that still has an index on it.
+            $table->dropUnique(['telegram_chat_id']);
             $table->dropColumn(['telegram_chat_id', 'telegram_username']);
         });
     }

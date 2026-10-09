@@ -1,19 +1,27 @@
 <?php
 
-test('registration screen can be rendered', function () {
-    $response = $this->get('/register');
+use App\Models\User;
+use Illuminate\Support\Facades\Route;
 
-    $response->assertStatus(200);
-});
+test('public registration is closed', function () {
+    expect(Route::has('register'))->toBeFalse();
 
-test('new users can register', function () {
-    $response = $this->post('/register', [
+    $this->get('/register')->assertNotFound();
+
+    $this->post('/register', [
         'name' => 'Test User',
         'email' => 'test@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
-    ]);
+    ])->assertNotFound();
 
-    $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $this->assertGuest();
+    expect(User::where('email', 'test@example.com')->exists())->toBeFalse();
+});
+
+test('login page does not link to registration', function () {
+    $this->get('/login')
+        ->assertOk()
+        ->assertDontSee('/register')
+        ->assertDontSee('Register');
 });

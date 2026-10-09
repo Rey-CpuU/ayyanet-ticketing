@@ -2,20 +2,27 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class TicketMessage extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'ticket_id',
         'user_id',
         'message',
         'is_internal',
+        'type',
     ];
 
-    protected $casts = [
-        'is_internal' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'is_internal' => 'boolean',
+        ];
+    }
 
     public function ticket()
     {

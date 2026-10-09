@@ -1,6 +1,7 @@
 <?php
 
 use App\Mail\UserInvitation;
+use App\Models\Invitation;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -16,58 +17,99 @@ test('admin can list users', function () {
         ->assertSee($this->cs->name);
 });
 
-test('admin creates a user and sends invitation email with temporary password', function () {
+test('admin invites a user by email instead of creating the account directly', function () {
     Mail::fake();
 
     $this->actingAs($this->admin)->post('/users', [
-        'name'  => 'Sari Ningsih',
         'email' => 'sari@example.com',
-        'role'  => 'cs',
+        'role' => 'cs',
     ])->assertRedirect('/users');
 
-    $this->assertDatabaseHas('users', [
-        'name'  => 'Sari Ningsih',
+    // No account exists until the invitee completes the sign-up link.
+    $this->assertDatabaseMissing('users', ['email' => 'sari@example.com']);
+    $this->assertDatabaseHas('invitations', [
         'email' => 'sari@example.com',
-        'role'  => 'cs',
+        'role' => 'cs',
+        'created_by' => $this->admin->id,
     ]);
 
     Mail::assertSent(UserInvitation::class, function (UserInvitation $mail) {
-        return $mail->hasTo('sari@example.com') && ! empty($mail->temporaryPassword);
+        return $mail->hasTo('sari@example.com')
+            && str_contains($mail->inviteUrl, '/register/invite/'.$mail->invitation->token);
     });
-
-    // The stored password is hashed, not the plaintext temporary password.
-    $plain = Mail::sent(UserInvitation::class)->first()->temporaryPassword;
-    $user = User::where('email', 'sari@example.com')->first();
-    expect($user->password)->not->toBe($plain)
-        ->and(Hash::check($plain, $user->password))->toBeTrue();
 });
 
-test('invited user can log in with the temporary password', function () {
+test('invited user can register through the link and then log in', function () {
     Mail::fake();
 
     $this->actingAs($this->admin)->post('/users', [
-        'name'  => 'Rina',
         'email' => 'rina@example.com',
-        'role'  => 'lapangan',
+        'role' => 'lapangan',
     ]);
+    $this->post('/logout');
 
-    Mail::assertSent(UserInvitation::class, function (UserInvitation $mail) {
-        return $mail->hasTo('rina@example.com');
-    });
+    $invitation = Invitation::where('email', 'rina@example.com')->firstOrFail();
 
-    $plain = Mail::sent(UserInvitation::class)->first()->temporaryPassword;
+    $this->get("/register/invite/{$invitation->token}")->assertOk()->assertSee('rina@example.com');
+
+    $this->post("/register/invite/{$invitation->token}", [
+        'name' => 'Rina',
+        'password' => 'Rahasia#2026',
+        'password_confirmation' => 'Rahasia#2026',
+    ])->assertRedirect(route('login'));
+
+    $user = User::where('email', 'rina@example.com')->firstOrFail();
+    expect($user->role)->toBe('lapangan')
+        ->and($user->email_verified_at)->not->toBeNull()
+        ->and(Hash::check('Rahasia#2026', $user->password))->toBeTrue()
+        ->and($invitation->fresh()->accepted_at)->not->toBeNull();
+
+    // The link is single-use.
+    $this->get("/register/invite/{$invitation->token}")->assertSee('Undangan Tidak Valid');
 
     $this->post('/login', [
-        'email'    => 'rina@example.com',
-        'password' => $plain,
+        'email' => 'rina@example.com',
+        'password' => 'Rahasia#2026',
     ])->assertRedirect(route('dashboard'));
+});
+
+test('expired invitations cannot be used', function () {
+    $invitation = Invitation::create([
+        'email' => 'late@example.com',
+        'role' => 'cs',
+        'token' => str_repeat('a', 64),
+        'expires_at' => now()->subMinute(),
+        'created_by' => $this->admin->id,
+    ]);
+
+    $this->post("/register/invite/{$invitation->token}", [
+        'name' => 'Late',
+        'password' => 'Rahasia#2026',
+        'password_confirmation' => 'Rahasia#2026',
+    ])->assertSessionHasErrors('token');
+
+    $this->assertDatabaseMissing('users', ['email' => 'late@example.com']);
+});
+
+test('re-inviting the same email refreshes the pending invitation', function () {
+    Mail::fake();
+
+    $this->actingAs($this->admin)->post('/users', ['email' => 'dua@example.com', 'role' => 'cs']);
+    $firstToken = Invitation::where('email', 'dua@example.com')->value('token');
+
+    $this->actingAs($this->admin)->post('/users', ['email' => 'dua@example.com', 'role' => 'admin'])
+        ->assertRedirect('/users');
+
+    expect(Invitation::where('email', 'dua@example.com')->count())->toBe(1);
+    $invitation = Invitation::where('email', 'dua@example.com')->first();
+    expect($invitation->token)->not->toBe($firstToken)
+        ->and($invitation->role)->toBe('admin');
 });
 
 test('duplicate email is rejected', function () {
     $this->actingAs($this->admin)->post('/users', [
-        'name'  => 'Dup',
         'email' => $this->cs->email,
-        'role'  => 'cs',
+        'role' => 'cs',
     ])->assertSessionHasErrors('email');
 });
 
@@ -84,9 +126,9 @@ test('guest is redirected to login', function () {
 
 test('admin can edit a user role', function () {
     $this->actingAs($this->admin)->put("/users/{$this->cs->id}", [
-        'name'  => $this->cs->name,
+        'name' => $this->cs->name,
         'email' => $this->cs->email,
-        'role'  => 'lapangan',
+        'role' => 'lapangan',
     ])->assertRedirect('/users');
 
     expect($this->cs->fresh()->role)->toBe('lapangan');

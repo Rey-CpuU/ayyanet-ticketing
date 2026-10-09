@@ -15,23 +15,26 @@
                 <!-- Navigation Links -->
                 <div class="hidden sm:-my-px sm:ms-10 sm:flex items-center gap-1 h-full">
                     @auth
-                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                            {{ __('Dashboard') }}
-                        </x-nav-link>
-                    @endauth
-                    <x-nav-link :href="route('tickets.index')" :active="request()->routeIs('tickets.*') && !request()->routeIs('tickets.create')">
-                        {{ __('Tickets') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('customers.index')" :active="request()->routeIs('customers.*') && !request()->routeIs('customers.create')">
-                        {{ __('Customers') }}
-                    </x-nav-link>
-                    @auth
-                        <x-nav-link :href="route('status-banners.index')" :active="request()->routeIs('status-banners.*')">
-                            {{ __('Status') }}
-                        </x-nav-link>
-                    @endauth
-                    @auth
-                        @if (Auth::user()->role === 'admin')
+                        @if (Auth::user()->isStaff())
+                            <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                                {{ __('Dashboard') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('tickets.index')" :active="request()->routeIs('tickets.*') && !request()->routeIs('tickets.create')">
+                                {{ __('Tickets') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('customers.index')" :active="request()->routeIs('customers.*') && !request()->routeIs('customers.create')">
+                                {{ __('Customers') }}
+                            </x-nav-link>
+                        @endif
+                        @if (Auth::user()->hasRole('admin', 'cs'))
+                            <x-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
+                                {{ __('Laporan') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('status-banners.index')" :active="request()->routeIs('status-banners.*')">
+                                {{ __('Status') }}
+                            </x-nav-link>
+                        @endif
+                        @if (Auth::user()->isAdmin())
                             <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
                                 {{ __('Users') }}
                             </x-nav-link>
@@ -136,23 +139,26 @@
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden border-t border-[var(--border)]">
         <div class="pt-2 pb-3 space-y-1">
             @auth
-                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                    {{ __('Dashboard') }}
-                </x-responsive-nav-link>
-            @endauth
-            <x-responsive-nav-link :href="route('tickets.index')" :active="request()->routeIs('tickets.*') && !request()->routeIs('tickets.create')">
-                {{ __('Tickets') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('customers.index')" :active="request()->routeIs('customers.*') && !request()->routeIs('customers.create')">
-                {{ __('Customers') }}
-            </x-responsive-nav-link>
-            @auth
-                <x-responsive-nav-link :href="route('status-banners.index')" :active="request()->routeIs('status-banners.*')">
-                    {{ __('Status') }}
-                </x-responsive-nav-link>
-            @endauth
-            @auth
-                @if (Auth::user()->role === 'admin')
+                @if (Auth::user()->isStaff())
+                    <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                        {{ __('Dashboard') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('tickets.index')" :active="request()->routeIs('tickets.*') && !request()->routeIs('tickets.create')">
+                        {{ __('Tickets') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('customers.index')" :active="request()->routeIs('customers.*') && !request()->routeIs('customers.create')">
+                        {{ __('Customers') }}
+                    </x-responsive-nav-link>
+                @endif
+                @if (Auth::user()->hasRole('admin', 'cs'))
+                    <x-responsive-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
+                        {{ __('Laporan') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('status-banners.index')" :active="request()->routeIs('status-banners.*')">
+                        {{ __('Status') }}
+                    </x-responsive-nav-link>
+                @endif
+                @if (Auth::user()->isAdmin())
                     <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
                         {{ __('Users') }}
                     </x-responsive-nav-link>

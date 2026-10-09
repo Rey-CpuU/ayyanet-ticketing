@@ -6,49 +6,18 @@ use App\Mail\UserInvitation;
 use App\Models\Invitation;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
+/**
+ * Invitation-based onboarding. Admins create invitations from user management
+ * (UserController::store); invitees complete their account through the emailed link.
+ */
 class InvitationController extends Controller
 {
-    public function store(Request $request)
-    {
-        $request->validate([
-            'email' => ['required', 'email', 'unique:users,email'],
-            'role'  => ['required', 'in:admin,cs,lapangan'],
-        ]);
-
-        $existingInvitation = Invitation::where('email', $request->email)->first();
-
-        if ($existingInvitation && ! $existingInvitation->accepted_at) {
-            $existingInvitation->update([
-                'role'       => $request->role,
-                'token'      => Str::random(64),
-                'expires_at' => now()->addHours(24),
-            ]);
-
-            Mail::to($existingInvitation->email)->send(new UserInvitation($existingInvitation));
-
-            return back()->with('success', 'Undangan dikirim ulang ke alamat email yang terdaftar.');
-        }
-
-        $invitation = Invitation::create([
-            'email'      => $request->email,
-            'role'       => $request->role,
-            'token'      => Str::random(64),
-            'expires_at' => now()->addHours(24),
-            'created_by' => Auth::id(),
-        ]);
-
-        Mail::to($invitation->email)->send(new UserInvitation($invitation));
-
-        return back()->with('success', 'Undangan dikirim ke alamat email yang terdaftar.');
-    }
-
     public function resend(Invitation $invitation)
     {
         if ($invitation->accepted_at) {
@@ -56,7 +25,7 @@ class InvitationController extends Controller
         }
 
         $invitation->update([
-            'token'      => Str::random(64),
+            'token' => Str::random(64),
             'expires_at' => now()->addHours(24),
         ]);
 
@@ -67,9 +36,9 @@ class InvitationController extends Controller
 
     public function show(string $token)
     {
-        $invitation = Invitation::where('token', $token)->first();
+        $invitation = $this->findValid($token);
 
-        if (! $invitation || $invitation->accepted_at || $invitation->expires_at->isPast()) {
+        if (! $invitation) {
             return view('auth.invite-invalid');
         }
 
@@ -78,26 +47,46 @@ class InvitationController extends Controller
 
     public function register(Request $request, string $token)
     {
-        $invitation = Invitation::where('token', $token)->first();
+        $invitation = $this->findValid($token);
 
-        if (! $invitation || $invitation->accepted_at || $invitation->expires_at->isPast()) {
+        if (! $invitation) {
             return back()->withErrors(['token' => 'Link undangan tidak valid atau sudah kedaluwarsa.']);
         }
 
         $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
-        $user = User::create([
-            'name'     => $request->name,
-            'email'    => $invitation->email,
-            'role'     => $invitation->role,
-            'password' => Hash::make($request->password),
-        ]);
+        if (User::where('email', $invitation->email)->exists()) {
+            return back()->withErrors(['token' => 'Akun dengan email ini sudah terdaftar. Silakan masuk.']);
+        }
 
-        $invitation->update(['accepted_at' => now()]);
+        DB::transaction(function () use ($request, $invitation) {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $invitation->email,
+                'role' => $invitation->role,
+                'password' => Hash::make($request->password),
+            ]);
+
+            // Following the emailed link proves ownership of the address.
+            $user->markEmailAsVerified();
+
+            $invitation->update(['accepted_at' => now()]);
+        });
 
         return redirect()->route('login')->with('status', 'Pendaftaran akun berhasil! Silakan masuk menggunakan email dan password Anda.');
+    }
+
+    private function findValid(string $token): ?Invitation
+    {
+        $invitation = Invitation::where('token', $token)->first();
+
+        if (! $invitation || $invitation->accepted_at || $invitation->expires_at->isPast()) {
+            return null;
+        }
+
+        return $invitation;
     }
 }

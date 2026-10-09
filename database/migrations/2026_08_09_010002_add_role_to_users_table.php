@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // The base users migration already defines `role`; only add it on databases created before that.
+        if (Schema::hasColumn('users', 'role')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->enum('role', ['admin', 'cs', 'lapangan'])->default('cs')->after('email');
         });
@@ -15,8 +20,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('role');
-        });
+        // No-op: `role` belongs to the base users table and must not be dropped here.
     }
 };

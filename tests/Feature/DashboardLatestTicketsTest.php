@@ -5,7 +5,8 @@ use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 
-use function Pest\Laravel\{actingAs, get};
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
 
 test('shows the most recently visited tickets at the top, regardless of pagination', function () {
     $admin = User::factory()->create(['role' => 'admin']);
@@ -65,7 +66,6 @@ test('shows the most recently visited tickets at the top, regardless of paginati
     // — which is more recent than all three created_at values.
     Carbon::setTestNow();
 
-
     // Visiting ticket B stamps last_visited_at on it via touchVisited().
     actingAs($admin)->get(route('tickets.show', $ticketB))->assertOk();
 
@@ -77,14 +77,11 @@ test('shows the most recently visited tickets at the top, regardless of paginati
 
     $response->assertStatus(200);
 
-    // The dashboard renders two ticket sections: the main paginated list
-    // and the "Recently Visited" panel. We isolate the panel by looking
-    // for its x-data=quickChatPopover rows — each panel row has a unique
-    // x-data attribute with the ticket ID. We extract ticket IDs in order
-    // from the panel to verify B comes before C and A.
+    // The dashboard renders the ticket list and the "Terakhir Dilihat" (recently
+    // visited) panel. Each panel row carries data-recent-ticket="ID", so the
+    // ticket IDs can be extracted in render order to verify B comes before C and A.
     $html = $response->getContent();
-    // Match x-data="quickChatPopover(ID, ...)" to extract ticket IDs in render order.
-    preg_match_all('/x-data="quickChatPopover\((\d+),/', $html, $matches);
+    preg_match_all('/data-recent-ticket="(\d+)"/', $html, $matches);
     $panelTicketIds = $matches[1]; // e.g. ['3', '2', '1'] — IDs in panel order
 
     // B was visited (has last_visited_at) so it must appear first in the panel.
@@ -115,7 +112,7 @@ test('limits the Recently Visited panel to 5 tickets', function () {
     for ($i = 1; $i <= 8; $i++) {
         Carbon::setTestNow($realNow->copy()->subMinutes(30)->subSeconds(8 - $i));
         $tickets[] = Ticket::create([
-            'ticket_number' => 'TCK-LIMIT-' . $i,
+            'ticket_number' => 'TCK-LIMIT-'.$i,
             'customer_id' => $customer->id,
             'created_by' => $admin->id,
             'title' => "Limit ticket {$i}",
@@ -136,10 +133,8 @@ test('limits the Recently Visited panel to 5 tickets', function () {
 
     $response->assertStatus(200);
 
-    // Each row in the Recently Visited panel renders one x-data="quickChatPopover(...)" call.
-    // We count x-data= occurrences (not bare quickChatPopover) to avoid matching
-    // the <script> function definition at the bottom of the page.
+    // Each row in the Recently Visited panel carries one data-recent-ticket attribute.
     // The panel must show at most 5 rows even when 6 tickets have been visited.
     $html = $response->getContent();
-    expect(substr_count($html, 'x-data="quickChatPopover('))->toBe(5);
+    expect(substr_count($html, 'data-recent-ticket="'))->toBe(5);
 });

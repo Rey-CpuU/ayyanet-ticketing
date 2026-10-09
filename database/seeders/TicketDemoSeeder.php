@@ -7,7 +7,9 @@ use App\Models\StatusBanner;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Models\User;
+use App\Services\TicketWorkflow;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class TicketDemoSeeder extends Seeder
 {
@@ -43,9 +45,11 @@ class TicketDemoSeeder extends Seeder
         );
         $agents = collect([$cs, $cs2, $cs3]);
 
+        // Tickets and customers are soft-deletable: purge them for real so the demo numbers
+        // can be reused (tickets first, the customer FK restricts deletes).
         TicketMessage::query()->delete();
-        Ticket::query()->delete();
-        Customer::query()->delete();
+        Ticket::withTrashed()->forceDelete();
+        Customer::withTrashed()->forceDelete();
         StatusBanner::query()->delete();
 
         $customers = collect([
@@ -91,21 +95,28 @@ class TicketDemoSeeder extends Seeder
             $unassigned = $data['unassigned'] ?? false;
             unset($data['daysAgo'], $data['unassigned']);
 
+            $createdAt = now()->subDays($daysAgo)->subHours(2);
+
             $ticket = Ticket::create(array_merge($data, [
-                'ticket_number' => 'TCK-' . (1000 + $i),
-                'customer_id'   => $customers[$i % $customers->count()]->id,
-                'created_by'    => $user->id,
-                'assigned_to'   => $unassigned ? null : $agents[$i % $agents->count()]->id,
-                'created_at'    => now()->subDays($daysAgo)->subHours(2),
-                'updated_at'    => now()->subDays($daysAgo)->subMinutes(30),
-            ]));
+                'ticket_number' => 'TMP-'.Str::uuid(),
+                'customer_id' => $customers[$i % $customers->count()]->id,
+                'created_by' => $user->id,
+                'assigned_to' => $unassigned ? null : $agents[$i % $agents->count()]->id,
+            ], TicketWorkflow::initialSla($data['priority'], $createdAt)));
+
+            // Same numbering as tickets created through the app; backdate for a realistic history.
+            $ticket->forceFill([
+                'ticket_number' => TicketWorkflow::numberFor($ticket->id),
+                'created_at' => $createdAt,
+                'updated_at' => now()->subDays($daysAgo)->subMinutes(30),
+            ])->saveQuietly();
 
             $messageCount = rand(2, 4);
             for ($m = 0; $m < $messageCount; $m++) {
                 TicketMessage::create([
-                    'ticket_id'  => $ticket->id,
-                    'user_id'    => $user->id,
-                    'message'    => $messagePool[array_rand($messagePool)],
+                    'ticket_id' => $ticket->id,
+                    'user_id' => $user->id,
+                    'message' => $messagePool[array_rand($messagePool)],
                     'created_at' => $ticket->created_at->addHours(($m + 1) * 3),
                     'updated_at' => $ticket->created_at->addHours(($m + 1) * 3),
                 ]);
@@ -113,19 +124,19 @@ class TicketDemoSeeder extends Seeder
         }
 
         StatusBanner::create([
-            'title'      => 'Maintenance Terjadwal Malam Ini',
-            'message'    => 'Akan ada maintenance jaringan pada pukul 23.00–01.00. Koneksi internet mungkin terputus sementara di area tertentu.',
-            'type'       => 'maintenance',
-            'is_active'  => true,
+            'title' => 'Maintenance Terjadwal Malam Ini',
+            'message' => 'Akan ada maintenance jaringan pada pukul 23.00–01.00. Koneksi internet mungkin terputus sementara di area tertentu.',
+            'type' => 'maintenance',
+            'is_active' => true,
         ]);
 
         StatusBanner::create([
-            'title'      => 'Gangguan di Area Bandung',
-            'message'    => 'Sedang ada gangguan di area Bandung Utara. Tim teknis sedang menangani. Mohon tidak membuat tiket duplikat.',
-            'type'       => 'outage',
-            'is_active'  => true,
-            'starts_at'  => now()->subHour(),
-            'ends_at'    => now()->addHours(5),
+            'title' => 'Gangguan di Area Bandung',
+            'message' => 'Sedang ada gangguan di area Bandung Utara. Tim teknis sedang menangani. Mohon tidak membuat tiket duplikat.',
+            'type' => 'outage',
+            'is_active' => true,
+            'starts_at' => now()->subHour(),
+            'ends_at' => now()->addHours(5),
         ]);
     }
 }

@@ -15,7 +15,7 @@
     </x-slot>
 
     <div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
-        <form action="{{ route('invitations.store') }}" method="POST" class="card space-y-5 p-6">
+        <form action="{{ route('users.store') }}" method="POST" class="card space-y-5 p-6">
             @csrf
 
             <div class="grid gap-5 sm:grid-cols-2">
@@ -41,7 +41,7 @@
 
                 <div class="flex items-end pb-1.5 sm:col-span-2">
                     <p class="text-[12px] leading-relaxed text-[var(--muted)]">
-                        Sistem tidak akan langsung membuat akun. Sebuah link pendaftaran akan dikirim ke email di atas, dan user harus mengisikan nama serta password mereka sendiri. Link berlaku selama 5 jam.
+                        Sistem tidak akan langsung membuat akun. Sebuah link pendaftaran akan dikirim ke email di atas, dan user harus mengisikan nama serta password mereka sendiri. Link berlaku selama 24 jam.
                     </p>
                 </div>
             </div>

@@ -1,305 +1,854 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <a href="{{ route('tickets.index') }}" class="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--surface-2)] text-[var(--muted)] transition hover:text-[var(--foreground)]">
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </a>
-                <div>
-                    <div class="flex items-center gap-2.5">
-                        <span class="font-mono text-[11.5px] font-medium text-[var(--accent)]">{{ $ticket->ticket_number }}</span>
-                        @php
-                            $priorityClass = match ($ticket->priority) {
-                                'High' => 'priority-high',
-                                'Medium' => 'priority-medium',
-                                default => 'priority-default',
-                            };
-                            $priorityDotClass = match ($ticket->priority) {
-                                'High' => 'priority-dot-high',
-                                'Medium' => 'priority-dot-medium',
-                                default => 'priority-dot-default',
-                            };
-                            $statusBadgeClass = match ($ticket->status) {
-                                'Open' => 'badge-red',
-                                'Checking' => 'badge-violet',
-                                'Waiting Customer' => 'badge-amber',
-                                'Escalated' => 'badge-orange',
-                                'Solved' => 'badge-green',
-                                default => 'badge-slate',
-                            };
-                        @endphp
-                        <span class="badge {{ $statusBadgeClass }}">{{ $ticket->status }}</span>
-                        <span class="flex items-center gap-1.5 text-[11px] font-medium font-mono uppercase tracking-[0.04em] {{ $priorityClass }}">
-                            <span class="h-1.5 w-1.5 rounded-full {{ $priorityDotClass }}"></span>
-                            {{ $ticket->priority }}
-                        </span>
-                    </div>
-                    <h2 class="mt-1 font-display text-[15px] font-semibold leading-snug text-[var(--foreground)]">{{ $ticket->title }}</h2>
+@php
+    $channelMap = [
+        'email' => ['label' => 'Email', 'class' => 'email', 'icon' => '<svg viewBox="0 0 20 20" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M2.5 5.5A1.5 1.5 0 0 1 4 4h12a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 16 16H4a1.5 1.5 0 0 1-1.5-1.5v-9Zm1.2.8 6.3 4.5 6.3-4.5H3.7Zm12.8 8.2V6.7l-5.6 4-5.6-4v7.8h11.2Z"/></svg>'],
+        'live chat' => ['label' => 'Live Chat', 'class' => 'live-chat', 'icon' => '<svg viewBox="0 0 20 20" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M3 4.5A2.5 2.5 0 0 1 5.5 2h9A2.5 2.5 0 0 1 17 4.5v6A2.5 2.5 0 0 1 14.5 13H9l-4.5 3v-3H5.5A2.5 2.5 0 0 1 3 10.5v-6Zm2 1.5h10v1H5V6Zm0 3h7v1H5v-1Z"/></svg>'],
+        'whatsapp' => ['label' => 'WhatsApp', 'class' => 'whatsapp', 'icon' => '<svg viewBox="0 0 20 20" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M10 1.8A8.2 8.2 0 0 0 3.1 13.7L2 18l4.4-1.1A8.2 8.2 0 1 0 10 1.8Zm4.7 11.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1.3.2-4.1-1.2-3.5-1.7-5.8-6.1-6-6.4-.2-.4-.2-.9.1-1.3.1-.1.3-.2.5-.3l.5-.4c.2-.1.3-.1.5 0l.7.5c.2.2.4.5.5.8.1.2.3.5.1.6-.1.2-.2.3-.3.4-.2.2-.4.4-.6.6-.2.2-.1.4.1.6l.7.8c.3.3.7.5 1 .8.2.1.4.2.7.1.2-.1.7-.8.9-1.1.2-.3.4-.3.7-.2l.9.4c.2.1.4.3.4.5.1.2 0 .6-.2.8Z"/></svg>'],
+        'web form' => ['label' => 'Web Form', 'class' => 'web-form', 'icon' => '<svg viewBox="0 0 20 20" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M3 4.5A2.5 2.5 0 0 1 5.5 2h9A2.5 2.5 0 0 1 17 4.5v11A2.5 2.5 0 0 1 14.5 18h-9A2.5 2.5 0 0 1 3 15.5v-11Zm2.5-.5a.5.5 0 0 0-.5.5v1h10v-1a.5.5 0 0 0-.5-.5h-9Zm-.5 4v6h10v-6H5Zm2 1h4v1H7v-1Zm0 2h6v1H7v-1Z"/></svg>'],
+        'portal' => ['label' => 'Portal', 'class' => 'portal', 'icon' => '<svg viewBox="0 0 20 20" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M10 2.3A7.7 7.7 0 1 1 2.3 10 7.7 7.7 0 0 1 10 2.3Zm0 1.5a6.2 6.2 0 1 0 6.2 6.2A6.2 6.2 0 0 0 10 3.8Zm-1 2.2h2v5.2H9V6Zm0 6.1h2v1.5H9v-1.5Z"/></svg>'],
+    ];
 
-                    {{-- Assignee widget --}}
-                    <div class="mt-2 flex flex-wrap items-center gap-1.5">
-                        @auth
-                            <form method="POST" action="{{ route('tickets.assign', $ticket) }}" class="inline-flex">
-                                @csrf
-                                @method('PATCH')
-                                <select name="assigned_to" onchange="this.form.submit()"
-                                        class="select-chip inline-flex items-center gap-1.5 rounded-full border text-[13px] font-semibold transition
-                                        {{ $ticket->assigned_to === null
-                                            ? 'border-dashed border-[var(--amber-text-50)] bg-[var(--amber-text-06)] text-[var(--amber-text)]'
-                                            : 'border-[var(--border-strong)] bg-[var(--surface-3)] text-[var(--foreground)]' }}">
-                                    <option value="" @selected($ticket->assigned_to === null)>Unassigned</option>
-                                    @foreach ($assignableUsers as $agent)
-                                        <option value="{{ $agent->id }}" @selected($ticket->assigned_to === $agent->id)>{{ $agent->name }}</option>
-                                    @endforeach
-                                </select>
-                            </form>
-                        @else
-                            @if ($ticket->assignee)
-                                <span class="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--surface-3)] px-2.5 py-[3px] text-[11px] font-semibold text-[var(--accent-text-strong)]">
-                                    <span class="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[8px] font-bold">{{ strtoupper(substr($ticket->assignee->name, 0, 2)) }}</span>
-                                    {{ $ticket->assignee->name }}
-                                </span>
-                            @else
-                                <span class="inline-flex items-center rounded-full border border-dashed border-[var(--amber-text-40)] px-2.5 py-[3px] text-[10.5px] font-semibold uppercase tracking-[0.04em] text-[var(--amber-text)]">Unassigned</span>
-                            @endif
-                        @endauth
-                    </div>
-                </div>
+    $rawChannel = strtolower($ticket->category ?? 'Email');
+    $channel = $channelMap[$rawChannel] ?? $channelMap['email'];
+@endphp
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Tiket #{{ $ticket->ticket_number ?? $ticket->id }}</title>
+    <style>
+        :root {
+            --bg: #0b1120;
+            --panel: #111827;
+            --panel-soft: #0f172a;
+            --line: rgba(148, 163, 184, 0.18);
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --purple: #8b5cf6;
+            --green: #22c55e;
+            --cyan: #2dd4bf;
+            --blue: #60a5fa;
+            --amber: #f59e0b;
+            --red: #f87171;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(180deg, #020817 0%, #0f172a 100%);
+            color: var(--text);
+        }
+
+        .wrap {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 30px 20px 50px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 2rem;
+        }
+
+        .link {
+            color: #c4b5fd;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .ticket-panel {
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 22px;
+        }
+
+        .meta-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .channel-tag, .status-tag, .priority-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .channel-tag.email { background: rgba(96,165,250,0.14); color: #93c5fd; }
+        .channel-tag.live-chat { background: rgba(45, 212, 191, 0.14); color: #5eead4; }
+        .channel-tag.whatsapp { background: rgba(34, 197, 94, 0.14); color: #86efac; }
+        .channel-tag.web-form { background: rgba(168, 85, 247, 0.14); color: #d8b4fe; }
+        .channel-tag.portal { background: rgba(251, 146, 60, 0.14); color: #fdba74; }
+        .status-tag.open { background: rgba(34, 197, 94, 0.12); color: #86efac; }
+        .status-tag.checking { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
+        .status-tag.solved { background: rgba(34, 197, 94, 0.12); color: #86efac; }
+        .priority-tag.high { background: rgba(248, 113, 113, 0.12); color: #fca5a5; }
+        .priority-tag.medium { background: rgba(251, 191, 36, 0.12); color: #fcd34d; }
+        .priority-tag.low { background: rgba(96,165,250,0.12); color: #93c5fd; }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .ticket-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .ticket-id {
+            color: var(--muted);
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1.3fr 0.7fr;
+            gap: 24px;
+        }
+
+        .card {
+            background: rgba(17, 24, 39, 0.75);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 18px;
+        }
+
+        .card h3 {
+            margin: 0 0 12px;
+            font-size: 1rem;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+        }
+
+        .detail-row:last-child { border-bottom: none; }
+
+        .label {
+            color: var(--muted);
+        }
+
+        .message-box {
+            max-height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .message {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 12px 14px;
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .message strong {
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        form {
+            margin-top: 18px;
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: rgba(15, 23, 42, 0.8);
+            color: var(--text);
+        }
+
+        button {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #8b5cf6, #6d58d1);
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .success {
+            color: #86efac;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .attachment-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: rgba(139, 92, 246, 0.12);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 10px;
+            color: #c4b5fd;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .action-links {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .action-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            background: rgba(139, 92, 246, 0.12);
+            color: #e9ddff;
+        }
+
+        .action-link.danger {
+            border-color: rgba(248, 113, 113, 0.4);
+            background: rgba(248, 113, 113, 0.12);
+            color: #fca5a5;
+        }
+
+        .action-link.ghost {
+            border-color: var(--line);
+            background: rgba(148, 163, 184, 0.08);
+            color: var(--text);
+        }
+
+        .action-link .spinner {
+            display: none;
+        }
+
+        .action-link.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .action-link.loading .spinner {
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+        }
+
+        .spinner.dark {
+            border-color: rgba(139, 92, 246, 0.2);
+            border-top-color: #8b5cf6;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Confirm delete modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 8, 23, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background: #111827;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 28px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: rgba(248, 113, 113, 0.12);
+            color: #f87171;
+            font-size: 1.4rem;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .modal-text {
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-actions button {
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            width: auto;
+        }
+
+        .sla-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+        .sla-status.breached { color: #f87171; }
+        .sla-status.met { color: #47d791; }
+        .sla-status.active { color: #fbbf24; }
+        .sla-status.paused { color: #93c5fd; }
+
+        .status-tag.waiting-customer { background: rgba(96, 165, 250, 0.12); color: #93c5fd; }
+        .status-tag.escalated { background: rgba(248, 113, 113, 0.12); color: #fca5a5; }
+        .status-tag.closed { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+
+        .sla-countdown {
+            display: block;
+            margin-top: 4px;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .sla-box.stacked {
+            display: block;
+        }
+
+        .sla-box .sla-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        form.stack-form {
+            display: block;
+            margin-top: 0;
+        }
+
+        .stack-form label {
+            display: block;
+            margin: 12px 0 6px;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        .stack-form label:first-of-type {
+            margin-top: 0;
+        }
+
+        .stack-form select,
+        .stack-form textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: rgba(15, 23, 42, 0.8);
+            color: var(--text);
+            font: inherit;
+        }
+
+        .stack-form textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .stack-form button {
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        .field-error-text {
+            margin-top: 6px;
+            color: #fca5a5;
+            font-size: 0.8rem;
+        }
+
+        .message-form {
+            flex-wrap: wrap;
+        }
+
+        .internal-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-basis: 100%;
+            color: var(--muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .internal-toggle input {
+            flex: none;
+            width: auto;
+            padding: 0;
+            accent-color: #8b5cf6;
+        }
+
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 420px;
+            overflow-y: auto;
+        }
+
+        .activity {
+            padding: 10px 12px;
+            border-left: 3px solid rgba(139, 92, 246, 0.5);
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 0 10px 10px 0;
+            font-size: 0.9rem;
+        }
+
+        .activity.internal_note { border-left-color: #fbbf24; }
+        .activity.sla_breached { border-left-color: #f87171; }
+        .activity.resolution_note { border-left-color: #22c55e; }
+
+        .activity-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .activity-label {
+            color: #c4b5fd;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .activity-time {
+            margin-left: auto;
+            color: var(--muted);
+            font-size: 0.75rem;
+        }
+
+        .activity-body {
+            margin-top: 4px;
+            color: #cbd5e1;
+            white-space: pre-line;
+            word-break: break-word;
+        }
+
+        .resolution-text {
+            margin: 0;
+            white-space: pre-line;
+            color: #cbd5e1;
+        }
+
+        @media (max-width: 760px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ticket-header {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    @include('partials.status-banner')
+    <div class="wrap">
+        <div class="topbar">
+            <h1 class="title">Ticket Detail</h1>
+            <div class="action-links">
+                <x-notification-bell />
+                <a href="{{ route('dashboard') }}" class="link">← Kembali ke Queue</a>
             </div>
-
-            @auth
-                <div class="flex items-center gap-2">
-                    <a href="{{ route('tickets.edit', $ticket) }}" class="btn-secondary">
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                            <path d="M11 2l3 3-9 9H2v-3l9-9z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                        Edit Ticket
-                    </a>
-                </div>
-            @endauth
         </div>
-    </x-slot>
 
-    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        @if (session('success'))
-            <div class="mb-5 rounded-md border border-[var(--green-text-30)] bg-[var(--green-text-10)] px-4 py-3 text-[13px] font-medium text-[var(--green-text)]">
-                {{ session('success') }}
+        <div class="ticket-panel">
+            <div class="meta-bar">
+                <span class="channel-tag {{ $channel['class'] }}">{!! $channel['icon'] !!} {{ $channel['label'] }}</span>
+                <span class="status-tag {{ Str::slug($ticket->status ?? 'open') }}">{{ $ticket->status ?? 'Open' }}</span>
+                <span class="priority-tag {{ strtolower($ticket->priority ?? 'medium') }}">{{ $ticket->priority ?? 'Medium' }}</span>
             </div>
-        @endif
 
-        <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-            {{-- Conversation --}}
-            <div class="card flex flex-col overflow-hidden">
-                <div class="border-b border-[var(--border)] px-5 py-4">
-                    <h3 class="font-display text-[14px] font-bold tracking-[-0.01em] text-[var(--foreground)]">Conversation</h3>
+            <div class="ticket-header">
+                <div>
+                    <h2>{{ $ticket->title }}</h2>
+                    <div class="ticket-id">{{ $ticket->ticket_number ?? 'TKT-' . str_pad((string) $ticket->id, 4, '0', STR_PAD_LEFT) }}</div>
                 </div>
+                <div class="action-links">
+                    <a href="{{ route('tickets.index') }}" class="action-link ghost">Lihat daftar tiket</a>
+                    @can('update', $ticket)
+                        <a href="{{ route('tickets.edit', $ticket->id) }}" class="action-link">✏️ Edit</a>
+                    @endcan
+                    <a href="{{ route('tickets.audit-log', $ticket->id) }}" class="action-link ghost">📋 Audit Log</a>
+                    @can('delete', $ticket)
+                        <button type="button" class="action-link danger" onclick="openDeleteModal({{ Js::from($ticket->ticket_number ?? 'TKT-' . str_pad((string) $ticket->id, 4, '0', STR_PAD_LEFT)) }}, 'delete-ticket-form')">🗑️ Hapus</button>
+                    @endcan
+                </div>
+            </div>
 
-                <div class="ticket-detail-scroll max-h-[52vh] flex-1 space-y-4 overflow-y-auto px-5 py-4">
-                    @forelse ($visibleMessages as $msg)
-                        <div class="flex gap-3">
-                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--surface-3)] text-[11px] font-semibold text-[var(--foreground)]">
-                                {{ strtoupper(substr($msg->user->name ?? 'CS', 0, 2)) }}
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <div class="mb-1.5 flex items-center gap-2">
-                                    <span class="text-[13px] font-semibold text-[var(--foreground)]">{{ $msg->user->name ?? 'CS Ayyanet' }}</span>
-                                    @if ($msg->is_internal)
-                                        <span class="badge" style="background: color-mix(in srgb, var(--amber-text) 12%, transparent); color: var(--amber-text);">
-                                            <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                                                <rect x="3.5" y="7.5" width="9" height="5.5" rx="1" stroke="currentColor" stroke-width="1.4"/>
-                                                <path d="M6 7.5V5.5a2 2 0 114 0v2" stroke="currentColor" stroke-width="1.4"/>
-                                            </svg>
-                                            Internal
-                                        </span>
+            <div class="grid">
+                <div>
+                    <div class="card">
+                        <h3>Deskripsi</h3>
+                        <p>{{ $ticket->description }}</p>
+                    </div>
+
+                    <div class="card" style="margin-top: 18px;">
+                        <h3>Riwayat Pesan</h3>
+
+                        @if(session('success'))
+                            <div class="success">{{ session('success') }}</div>
+                        @endif
+
+                        <x-notification />
+
+                        <div class="message-box">
+                            @forelse($ticket->messages as $msg)
+                                <div class="message">
+                                    <strong>{{ $msg->user?->name ?? 'Customer' }}</strong>
+                                    @if($msg->is_internal)
+                                        <span style="margin-left: 6px; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; background: rgba(251, 191, 36, 0.14); color: #fbbf24;">Internal</span>
                                     @endif
-                                    <span class="font-mono text-[11px] text-[var(--muted)]">{{ $msg->created_at->format('d M Y H:i') }}</span>
+                                    <div>{{ $msg->message }}</div>
                                 </div>
-                                <div class="rounded-md rounded-tl-none border border-[var(--border)] bg-[var(--surface-2)] p-3 text-[13px] leading-relaxed text-[var(--foreground)] whitespace-pre-wrap">
-                                    {{ $msg->message }}
+                            @empty
+                                <div class="message">
+                                    <strong>System</strong>
+                                    <div>Belum ada riwayat pesan untuk tiket ini.</div>
                                 </div>
-                            </div>
+                            @endforelse
                         </div>
-                    @empty
-                        <div class="py-12 text-center">
-                            <p class="text-[13.5px] font-medium text-[var(--muted)]">Belum ada riwayat pesan.</p>
-                            <p class="mt-1 text-[12px] text-[var(--muted-strong)]">Start the conversation below.</p>
+
+                        @can('reply', $ticket)
+                            <form action="{{ route('tickets.messages.store', $ticket->id) }}" method="POST" id="message-form" class="message-form">
+                                @csrf
+                                <input type="text" name="message" placeholder="Tulis balasan..." maxlength="2000" required aria-label="Pesan">
+                                <button type="submit" id="send-message-btn">
+                                    <span class="spinner" style="display:none;"></span>
+                                    Kirim
+                                </button>
+                                @can('addInternalNote', $ticket)
+                                    <label class="internal-toggle">
+                                        <input type="checkbox" name="is_internal" value="1">
+                                        Catatan internal (hanya terlihat oleh staf)
+                                    </label>
+                                @endcan
+                            </form>
+                            @error('message')
+                                <div class="field-error-text">{{ $message }}</div>
+                            @enderror
+                        @endcan
+                    </div>
+
+                    <div class="card" style="margin-top: 18px;">
+                        <h3>Activity Log</h3>
+                        <div class="activity-list">
+                            @forelse($ticket->activities as $activity)
+                                <div class="activity {{ $activity->action }}">
+                                    <div class="activity-head">
+                                        <strong>{{ $activity->user?->name ?? 'Sistem' }}</strong>
+                                        <span class="activity-label">{{ $activity->label() }}</span>
+                                        <span class="activity-time" title="{{ $activity->created_at?->format('d M Y, H:i') }}">{{ $activity->created_at?->diffForHumans() }}</span>
+                                    </div>
+                                    @if($activity->isTransition())
+                                        <div class="activity-body">{{ $activity->old_value ?? '-' }} → {{ $activity->new_value ?? '-' }}</div>
+                                    @elseif($activity->action === 'sla_breached')
+                                        <div class="activity-body">Deadline {{ $activity->new_value ?? '-' }} terlewati.</div>
+                                    @elseif($activity->action === 'created')
+                                        <div class="activity-body">Status awal {{ $activity->new_value ?? 'Open' }}.</div>
+                                    @elseif(filled($activity->new_value))
+                                        <div class="activity-body">{{ Str::limit($activity->new_value, 300) }}</div>
+                                    @endif
+                                </div>
+                            @empty
+                                <div class="message">Belum ada aktivitas untuk tiket ini.</div>
+                            @endforelse
                         </div>
-                    @endforelse
+                    </div>
                 </div>
 
-                @auth
-                <form action="{{ route('tickets.messages.store', $ticket->id) }}" method="POST" class="border-t border-[var(--border)] px-5 py-4">
-                    @csrf
-                    <label for="message" class="label">Reply</label>
-                    <textarea name="message" id="message" rows="3" required placeholder="Tulis balasan pesan di sini…" class="input resize-none" onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); if(this.value.trim()) this.form.submit(); }"></textarea>
-                    <x-input-error :messages="$errors->get('message')" class="mt-1.5" />
-                    <div class="mt-3 flex items-center justify-between gap-3">
-                        <label class="flex cursor-pointer items-center gap-2 text-[12.5px] font-medium text-[var(--muted)]">
-                            <input type="checkbox" name="is_internal" value="1" class="h-3.5 w-3.5 rounded border-[var(--border-strong)] bg-[var(--surface-2)] text-[var(--amber-text)] focus:ring-[var(--amber-text)]">
-                            Internal note (staff only)
-                        </label>
-                        <button type="submit" class="btn-primary">
-                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                                <path d="M14 2L1 7l5 2.5L8.5 15l5-13Z" fill="currentColor" opacity=".85"/>
-                            </svg>
-                            Kirim Pesan
-                        </button>
+                <div>
+                    <div class="card">
+                        <h3>Informasi Customer</h3>
+                        <div class="detail-row"><span class="label">Nama</span><strong>{{ $ticket->customer->name ?? 'N/A' }}</strong></div>
+                        <div class="detail-row"><span class="label">Phone</span><strong>{{ $ticket->customer->phone ?? 'N/A' }}</strong></div>
+                        <div class="detail-row"><span class="label">Package</span><strong>{{ $ticket->customer->package ?? 'N/A' }}</strong></div>
+                        <div class="detail-row"><span class="label">Alamat</span><strong>{{ $ticket->customer->address ?? 'N/A' }}</strong></div>
                     </div>
-                </form>
-                @endauth
-            </div>
 
-            {{-- Details sidebar --}}
-            <div class="space-y-6">
-                <div class="card overflow-hidden">
-                    <div class="border-b border-[var(--border)] px-5 py-4">
-                        <h3 class="font-display text-[14px] font-bold tracking-[-0.01em] text-[var(--foreground)]">Details</h3>
-                    </div>
-                    <dl class="divide-y divide-[var(--border)] text-[12.5px]">
-                        <div class="flex justify-between gap-3 px-5 py-3">
-                            <dt class="text-[var(--muted)]">Created</dt>
-                            <dd class="font-mono text-[var(--foreground)]">{{ $ticket->created_at->format('d M Y H:i') }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-3 px-5 py-3">
-                            <dt class="text-[var(--muted)]">Updated</dt>
-                            <dd class="font-mono text-[var(--foreground)]">{{ $ticket->updated_at->format('d M Y H:i') }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-3 px-5 py-3">
-                            <dt class="text-[var(--muted)]">Category</dt>
-                            <dd class="text-[var(--foreground)]">{{ $ticket->category ?? '—' }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-3 px-5 py-3">
-                            <dt class="text-[var(--muted)]">OLT</dt>
-                            <dd class="font-mono text-[var(--foreground)]">{{ $ticket->olt ?? '—' }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-3 px-5 py-3">
-                            <dt class="text-[var(--muted)]">Location</dt>
-                            <dd class="font-mono text-[var(--foreground)]">{{ $ticket->location ?? '—' }}</dd>
-                        </div>
-                    </dl>
-                </div>
+                    <div class="card" style="margin-top: 18px;">
+                        <h3>Detail Ticket</h3>
+                        <div class="detail-row"><span class="label">Kategori</span><strong>{{ $ticket->category ?? 'Email' }}</strong></div>
+                        <div class="detail-row"><span class="label">Status</span><strong>{{ $ticket->status ?? 'Open' }}</strong></div>
+                        <div class="detail-row"><span class="label">Prioritas</span><strong>{{ $ticket->priority ?? 'Medium' }}</strong></div>
+                        <div class="detail-row"><span class="label">Penanggung Jawab</span><strong>{{ $ticket->assignee->name ?? 'Belum ditugaskan' }}</strong></div>
+                        <div class="detail-row"><span class="label">Dibuat</span><strong>{{ $ticket->created_at?->format('d M Y, H:i') ?? '-' }}</strong></div>
+                        @if($ticket->resolved_at)
+                            <div class="detail-row"><span class="label">Diselesaikan</span><strong>{{ $ticket->resolved_at->format('d M Y, H:i') }}</strong></div>
+                        @endif
 
-                @auth
-                <div class="card relative z-20">
-                    <div class="border-b border-[var(--border)] px-5 py-4">
-                        <h3 class="font-display text-[14px] font-bold tracking-[-0.01em] text-[var(--foreground)]">Update Status</h3>
-                    </div>
-                    <form action="{{ route('tickets.update-status', $ticket) }}" method="POST" class="px-5 py-4">
-                        @csrf
-                        @method('PATCH')
-                        <label for="status" class="label">Status</label>
-                        <x-custom-select
-                            name="status"
-                            id="status"
-                            :value="$ticket->status"
-                            :options="[
-                                'Open' => 'Open',
-                                'Checking' => 'Checking',
-                                'Waiting Customer' => 'Waiting Customer',
-                                'Escalated' => 'Escalated',
-                                'Solved' => 'Solved',
-                                'Closed' => 'Closed'
-                            ]" />
-                        <x-input-error :messages="$errors->get('status')" class="mt-1.5" />
-                        <button type="submit" class="btn-primary mt-3 w-full justify-center">Save Status</button>
-                    </form>
-                </div>
-                @endauth
+                        @if($ticket->sla_deadline)
+                            @php
+                                if ($ticket->sla_status === App\Models\Ticket::SLA_MET) {
+                                    [$slaState, $slaLabel] = ['met', 'Terpenuhi'];
+                                } elseif ($ticket->sla_status === App\Models\Ticket::SLA_BREACHED || (! $ticket->isSlaPaused() && $ticket->sla_deadline->isPast())) {
+                                    [$slaState, $slaLabel] = ['breached', 'Terlampaui'];
+                                } elseif ($ticket->isSlaPaused()) {
+                                    [$slaState, $slaLabel] = ['paused', 'Dijeda'];
+                                } else {
+                                    [$slaState, $slaLabel] = ['active', 'Berjalan'];
+                                }
+                                $slaRunning = ! $ticket->statusEnum()->isResolved() && ! $ticket->isSlaPaused();
+                                // While paused the remaining time is frozen at the moment the clock stopped.
+                                $slaRemaining = $ticket->isSlaPaused()
+                                    ? (int) $ticket->sla_paused_at->diffInSeconds($ticket->sla_deadline, false)
+                                    : null;
+                            @endphp
+                            <div class="sla-box stacked" id="sla-box">
+                                <div class="sla-row">
+                                    <span>SLA Deadline</span>
+                                    <span class="sla-status {{ $slaState }}">{{ $slaLabel }}</span>
+                                </div>
+                                <strong>{{ $ticket->sla_deadline->format('d M Y, H:i') }}</strong>
+                                @if($slaRunning)
+                                    <span class="sla-countdown sla-status {{ $slaState }}" id="sla-countdown" data-deadline="{{ $ticket->sla_deadline->toIso8601String() }}" aria-live="polite"></span>
+                                @elseif($slaRemaining !== null)
+                                    <span class="sla-countdown sla-status paused">
+                                        Menunggu customer · sisa {{ intdiv(max($slaRemaining, 0), 3600) }}j {{ intdiv(max($slaRemaining, 0) % 3600, 60) }}m
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
 
-                <div class="card overflow-hidden">
-                    <div class="border-b border-[var(--border)] px-5 py-4">
-                        <h3 class="font-display text-[14px] font-bold tracking-[-0.01em] text-[var(--foreground)]">Customer</h3>
-                    </div>
-                    <div class="px-5 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--accent-40)] bg-[var(--accent-soft)] text-[12px] font-semibold text-[var(--accent-text)]">
-                                {{ strtoupper(substr($ticket->customer->name ?? '?', 0, 2)) }}
-                            </div>
-                            <div>
-                                <div class="text-[13.5px] font-semibold text-[var(--foreground)]">{{ $ticket->customer->name ?? 'Unknown' }}</div>
-                                <div class="font-mono text-[11px] text-[var(--muted)]">{{ $ticket->customer->customer_id ?? '' }}</div>
-                            </div>
-                        </div>
-                        <dl class="mt-4 space-y-2 text-[12.5px]">
-                            <div class="flex justify-between gap-3">
-                                <dt class="text-[var(--muted)]">Phone</dt>
-                                <dd class="font-mono text-[var(--foreground)]">{{ $ticket->customer->phone ?? '—' }}</dd>
-                            </div>
-                            <div class="flex justify-between gap-3">
-                                <dt class="text-[var(--muted)]">Package</dt>
-                                <dd class="text-[var(--foreground)]">{{ $ticket->customer->package ?? '—' }}</dd>
-                            </div>
-                        </dl>
-                        @if ($ticket->customer?->address)
-                            <p class="mt-3 border-t border-[var(--border)] pt-3 text-[12px] leading-relaxed text-[var(--muted)]">{{ $ticket->customer->address }}</p>
+                        @if($ticket->attachment_path)
+                            @if($attachmentAvailable ?? false)
+                                <a href="{{ route('tickets.attachment', $ticket) }}" class="attachment-link">
+                                    📎 Download Lampiran ({{ basename($ticket->attachment_path) }})
+                                </a>
+                            @else
+                                <span class="attachment-link" style="opacity: 0.6; cursor: default;">
+                                    📎 Lampiran tidak tersedia ({{ basename($ticket->attachment_path) }})
+                                </span>
+                            @endif
                         @endif
                     </div>
-                </div>
 
-                <div class="card overflow-hidden">
-                    <div class="border-b border-[var(--border)] px-5 py-4">
-                        <h3 class="font-display text-[14px] font-bold tracking-[-0.01em] text-[var(--foreground)]">Description</h3>
-                    </div>
-                    <p class="px-5 py-4 text-[13px] leading-relaxed text-[var(--foreground)] whitespace-pre-wrap">{{ $ticket->description }}</p>
-                </div>
+                    @if($ticket->resolution_note)
+                        <div class="card" style="margin-top: 18px;">
+                            <h3>Catatan Penyelesaian</h3>
+                            <p class="resolution-text">{{ $ticket->resolution_note }}</p>
+                        </div>
+                    @endif
 
-                @auth
-                <div class="card overflow-hidden">
-                    <div class="border-b border-[var(--border)] px-5 py-4">
-                        <h3 class="font-display text-[14px] font-bold tracking-[-0.01em] text-[var(--foreground)]">Activity Log</h3>
-                    </div>
-                    <div class="ticket-detail-scroll max-h-[46vh] overflow-y-auto">
-                        @forelse ($ticket->activities()->with('user')->latest()->limit(50)->get() as $activity)
-                            @php
-                                $actionBadgeClass = match ($activity->action) {
-                                    'status_change' => 'badge-blue',
-                                    'internal_note' => 'badge-amber',
-                                    'assignment' => 'badge-cyan',
-                                    default => 'badge-violet',
-                                };
-                                $actionLabel = match ($activity->action) {
-                                    'status_change' => 'Status',
-                                    'internal_note' => 'Internal Note',
-                                    'assignment' => 'Assignment',
-                                    default => 'Reply',
-                                };
-                            @endphp
-                            <div class="flex items-start gap-3 border-b border-[var(--border-60)] px-5 py-3.5 last:border-0">
-                                <div class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--surface-3)] text-[10px] font-semibold text-[var(--foreground)]">
-                                    {{ strtoupper(substr($activity->user->name ?? '?', 0, 2)) }}
-                                </div>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <span class="badge {{ $actionBadgeClass }}">{{ $actionLabel }}</span>
-                                        <span class="text-[12.5px] font-semibold text-[var(--foreground)]">{{ $activity->user->name ?? 'Unknown' }}</span>
-                                        <span class="font-mono text-[10.5px] text-[var(--muted)]">{{ $activity->created_at->format('d M H:i') }}</span>
-                                    </div>
-                                    @if ($activity->action === 'status_change')
-                                        <p class="mt-1 text-[12px] text-[var(--muted)]">
-                                            <span class="font-mono text-[var(--red-bright)]">{{ $activity->old_value }}</span>
-                                            <span class="mx-1 text-[var(--muted-strong)]">→</span>
-                                            <span class="font-mono text-[var(--green-text)]">{{ $activity->new_value }}</span>
-                                        </p>
-                                    @elseif ($activity->action === 'assignment')
-                                        <p class="mt-1 text-[12px] text-[var(--muted)]">
-                                            <span class="font-mono">{{ $activity->old_value }}</span>
-                                            <span class="mx-1 text-[var(--muted-strong)]">→</span>
-                                            <span class="font-mono font-semibold text-[var(--cyan-text)]">{{ $activity->new_value }}</span>
-                                        </p>
-                                    @elseif ($activity->new_value)
-                                        <p class="mt-1 truncate text-[12px] text-[var(--muted)]">{{ $activity->new_value }}</p>
-                                    @endif
-                                </div>
-                            </div>
-                        @empty
-                            <p class="px-5 py-10 text-center text-[12.5px] font-medium text-[var(--muted)]">Belum ada aktivitas tercatat.</p>
-                        @endforelse
-                    </div>
+                    @can('update', $ticket)
+                        <div class="card" style="margin-top: 18px;">
+                            <h3>Ubah Status</h3>
+                            <form method="POST" action="{{ route('tickets.status.update', $ticket->id) }}" class="stack-form" id="status-form">
+                                @csrf
+                                @method('PATCH')
+                                <label for="status">Status baru</label>
+                                <select name="status" id="status" required>
+                                    @foreach($allowedStatuses as $status)
+                                        <option value="{{ $status->value }}" @selected(old('status') === $status->value)>{{ $status->value }}</option>
+                                    @endforeach
+                                </select>
+                                @error('status')
+                                    <div class="field-error-text">{{ $message }}</div>
+                                @enderror
+
+                                <label for="resolution_note">Catatan penyelesaian</label>
+                                <textarea name="resolution_note" id="resolution_note" maxlength="2000" placeholder="Wajib untuk Solved, atau Closed tanpa penyelesaian sebelumnya">{{ old('resolution_note') }}</textarea>
+                                @error('resolution_note')
+                                    <div class="field-error-text">{{ $message }}</div>
+                                @enderror
+
+                                <button type="submit">Simpan Status</button>
+                            </form>
+                        </div>
+                    @endcan
+
+                    @can('assign', $ticket)
+                        <div class="card" style="margin-top: 18px;">
+                            <h3>Penanggung Jawab</h3>
+                            <form method="POST" action="{{ route('tickets.assignee.update', $ticket->id) }}" class="stack-form">
+                                @csrf
+                                @method('PATCH')
+                                <label for="assigned_to">Tugaskan ke</label>
+                                <select name="assigned_to" id="assigned_to">
+                                    <option value="">Belum ditugaskan</option>
+                                    @foreach($assignableUsers as $staff)
+                                        <option value="{{ $staff->id }}" @selected((int) $ticket->assigned_to === $staff->id)>{{ $staff->name }} ({{ $staff->role }})</option>
+                                    @endforeach
+                                </select>
+                                @error('assigned_to')
+                                    <div class="field-error-text">{{ $message }}</div>
+                                @enderror
+                                <button type="submit">Simpan Penugasan</button>
+                            </form>
+                        </div>
+                    @endcan
                 </div>
-                @endauth
             </div>
         </div>
     </div>
-</x-app-layout>
+
+    <!-- Delete Ticket Form -->
+    @can('delete', $ticket)
+        <form method="POST" action="{{ route('tickets.destroy', $ticket->id) }}" id="delete-ticket-form" style="display: none;">
+            @csrf
+            @method('DELETE')
+        </form>
+    @endcan
+
+    <!-- Confirm Delete Modal -->
+    <div id="confirm-delete-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-icon">⚠️</div>
+            <div class="modal-title">Apakah Anda yakin?</div>
+            <div class="modal-text">
+                Anda yakin ingin menghapus <strong id="delete-item-name">tiket ini</strong>? Tindakan ini tidak dapat dibatalkan.
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="action-link ghost" onclick="closeDeleteModal()">Batal</button>
+                <button type="button" class="action-link danger" onclick="submitDelete()">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // SLA countdown
+        (function () {
+            const el = document.getElementById('sla-countdown');
+            if (!el) return;
+
+            const deadline = new Date(el.dataset.deadline).getTime();
+            const format = function (ms) {
+                const minutes = Math.floor(ms / 60000);
+                const days = Math.floor(minutes / 1440);
+                const hours = Math.floor((minutes % 1440) / 60);
+                const mins = minutes % 60;
+                return (days ? days + 'h ' : '') + hours + 'j ' + mins + 'm';
+            };
+            const tick = function () {
+                const diff = deadline - Date.now();
+                if (diff >= 0) {
+                    el.textContent = 'Sisa waktu ' + format(diff);
+                    el.className = 'sla-countdown sla-status active';
+                } else {
+                    el.textContent = 'Terlambat ' + format(-diff);
+                    el.className = 'sla-countdown sla-status breached';
+                }
+            };
+
+            tick();
+            setInterval(tick, 30000);
+        })();
+
+        // Message form loading spinner
+        document.getElementById('message-form')?.addEventListener('submit', function () {
+            const btn = document.getElementById('send-message-btn');
+            const spinner = btn?.querySelector('.spinner');
+            if (btn && spinner) {
+                spinner.style.display = 'inline-block';
+                btn.classList.add('loading');
+            }
+        });
+
+        // Confirm delete modal
+        let deleteFormId = null;
+
+        function openDeleteModal(itemName, formId) {
+            deleteFormId = formId;
+            document.getElementById('delete-item-name').textContent = itemName;
+            document.getElementById('confirm-delete-modal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('confirm-delete-modal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        function submitDelete() {
+            if (deleteFormId) {
+                document.getElementById(deleteFormId).requestSubmit();
+            }
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeDeleteModal();
+            }
+        });
+
+        // Close modal on overlay click
+        document.getElementById('confirm-delete-modal')?.addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+    </script>
+</body>
+</html>

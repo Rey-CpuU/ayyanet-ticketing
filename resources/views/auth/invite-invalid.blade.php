@@ -7,7 +7,7 @@
         </div>
         <h3 class="text-base font-bold text-[var(--foreground)]">Undangan Tidak Valid / Kedaluwarsa</h3>
         <p class="mt-2 text-xs text-[var(--muted)] leading-relaxed">
-            Link undangan ini sudah tidak berlaku (batas waktu 5 jam telah habis) atau telah digunakan. Silakan minta Admin untuk mengirimkan link undangan baru via email.
+            Link undangan ini sudah tidak berlaku (batas waktu 24 jam telah habis) atau telah digunakan. Silakan minta Admin untuk mengirimkan link undangan baru via email.
         </p>
         <div class="mt-6">
             <a href="{{ route('login') }}" class="btn-primary w-full justify-center !py-2">

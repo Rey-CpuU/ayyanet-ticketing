@@ -26,7 +26,7 @@ class StatusBannerController extends Controller
         StatusBanner::create($data);
 
         return redirect()->route('status-banners.index')
-            ->with('success', 'Banner created.');
+            ->with('success', 'Banner berhasil dibuat.');
     }
 
     public function edit(StatusBanner $statusBanner)
@@ -41,7 +41,7 @@ class StatusBannerController extends Controller
         $statusBanner->update($data);
 
         return redirect()->route('status-banners.index')
-            ->with('success', 'Banner updated.');
+            ->with('success', 'Banner berhasil diperbarui.');
     }
 
     public function destroy(StatusBanner $statusBanner)
@@ -49,7 +49,7 @@ class StatusBannerController extends Controller
         $statusBanner->delete();
 
         return redirect()->route('status-banners.index')
-            ->with('success', 'Banner deleted.');
+            ->with('success', 'Banner berhasil dihapus.');
     }
 
     public function active()
@@ -62,12 +62,12 @@ class StatusBannerController extends Controller
     private function validated(Request $request): array
     {
         return $request->validate([
-            'title'     => ['required', 'string', 'max:255'],
-            'message'   => ['required', 'string'],
-            'type'      => ['required', 'in:info,maintenance,outage,warning'],
+            'title' => ['required', 'string', 'max:255'],
+            'message' => ['required', 'string'],
+            'type' => ['required', 'in:info,maintenance,outage,warning'],
             'is_active' => ['sometimes', 'boolean'],
             'starts_at' => ['nullable', 'date'],
-            'ends_at'   => ['nullable', 'date', 'after_or_equal:starts_at'],
+            'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
         ]) + ['is_active' => $request->boolean('is_active')];
     }
 }
