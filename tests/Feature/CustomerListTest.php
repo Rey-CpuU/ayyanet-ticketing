@@ -59,7 +59,9 @@ test('only admins can list deleted customers', function () {
 });
 
 test('customer search endpoint returns a limited json list without deleted customers', function () {
-    Customer::factory()->count(25)->create(['name' => 'Pelanggan Massal']);
+    Customer::factory()->count(25)
+        ->sequence(fn ($sequence) => ['email' => "massal{$sequence->index}@contoh.test", 'address' => 'Jl. Massal'])
+        ->create(['name' => 'Pelanggan Massal']);
     $this->sari->delete();
 
     $this->actingAs($this->cs)->getJson('/customers/search?q=Massal')

@@ -68,7 +68,7 @@
                                                     <span class="text-[11px] font-medium text-[var(--muted)]">(you)</span>
                                                 @endif
                                                 @if ($user->isDeactivated())
-                                                    <span class="badge badge-slate ml-1" title="Dinonaktifkan {{ $user->deactivated_at->format('d M Y') }}">Nonaktif</span>
+                                                    <span class="badge badge-slate ml-1" title="Dinonaktifkan {{ $user->deactivated_at->inDisplayTz()->format('d M Y') }}">Nonaktif</span>
                                                 @endif
                                             </div>
                                             <div class="font-mono text-[11.5px] text-[var(--muted)]">{{ $user->email }}</div>
@@ -79,7 +79,7 @@
                                     <span class="badge" style="background: {{ $roleStyle['bg'] }}; color: {{ $roleStyle['text'] }};">{{ $roleLabel }}</span>
                                 </td>
                                 <td class="px-5 py-4 font-mono text-[12px] text-[var(--muted)]">{{ $user->created_tickets_count }}</td>
-                                <td class="px-5 py-4 font-mono text-[11.5px] text-[var(--muted)]">{{ $user->created_at->format('d M Y') }}</td>
+                                <td class="px-5 py-4 font-mono text-[11.5px] text-[var(--muted)]">{{ $user->created_at->inDisplayTz()->format('d M Y') }}</td>
                                 <td class="px-5 py-4">
                                     <div class="flex items-center gap-2">
                                         <a href="{{ route('users.edit', $user) }}" class="btn-secondary !px-3 !py-1.5 text-xs">Edit</a>

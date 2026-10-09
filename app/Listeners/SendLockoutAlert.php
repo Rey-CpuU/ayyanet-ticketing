@@ -31,7 +31,7 @@ class SendLockoutAlert
             return;
         }
 
-        $time = now()->toDateTimeString();
+        $time = now()->inDisplayTz()->format('Y-m-d H:i:s').' '.now()->inDisplayTz()->format('T');
 
         // Log only a hashed, non-reversible reference so the security event is
         // auditable without writing raw PII (email / IP) to the log files.
