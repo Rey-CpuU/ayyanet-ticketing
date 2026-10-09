@@ -11,14 +11,6 @@
                 <h2 class="font-display text-[17px] font-bold tracking-[-0.02em] text-[var(--foreground)]">Dashboard</h2>
                 <p class="mt-0.5 text-[12.5px] text-[var(--muted)]">Ringkasan penempatan — setiap tiket butuh penanggung jawab</p>
             </div>
-            @can('create', App\Models\Ticket::class)
-                <a href="{{ route('tickets.create') }}" class="btn-primary">
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                    </svg>
-                    Tiket Baru
-                </a>
-            @endcan
         </div>
     </x-slot>
 
@@ -421,7 +413,7 @@
                                         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                                         x-transition:leave-end="opacity-0 scale-95 translate-y-4"
                                         style="z-index: 9999; animation: popoverFloat 3s ease-in-out infinite;"
-                                        class="fixed bottom-6 right-6 w-96 max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-2)] p-4 text-[var(--foreground)] shadow-2xl">
+                                        class="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-50 w-96 md:bottom-6 md:right-6 max-w-[calc(100vw-2rem)] rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-2)] p-4 text-[var(--foreground)] shadow-2xl">
 
                                         <div class="mb-2.5 flex items-center justify-between border-b border-[var(--border)] pb-2.5">
                                             <div class="flex min-w-0 items-center gap-2">

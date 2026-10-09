@@ -3,6 +3,7 @@
 <div x-data="ticketModalData(@js(url('tickets')))"
     x-show="open"
     x-cloak
+    x-effect="document.body.classList.toggle('modal-open', open)"
     @open-ticket-modal.window="fetchTicketDetails($event.detail.ticketId)"
     @keydown.escape.window="if (showEditModal) { closeEditModal(); } else { closeModal(); }"
     class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"

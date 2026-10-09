@@ -753,6 +753,12 @@ input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focu
     color: var(--accent);
 }
 
+/* Mobile bottom tab bar steps aside while a full-screen modal is open. */
+body.overflow-y-hidden [data-nav='mobile-tabs'],
+body.modal-open [data-nav='mobile-tabs'] {
+    display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
 
     .fx-ambient::before,
