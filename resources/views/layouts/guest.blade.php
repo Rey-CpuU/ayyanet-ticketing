@@ -26,7 +26,6 @@
         <div class="fixed top-4 right-4 z-50">
             @include('partials.theme-toggle')
         </div>
-        @include('partials.status-banner', ['statusBanners' => \App\Models\StatusBanner::active()->latest()->get()])
         <div class="flex min-h-screen flex-col items-center justify-center bg-[var(--background)] px-4 pt-6 sm:pt-0">
             <div class="mb-6 flex items-center gap-2.5">
                 <x-application-logo class="h-8 w-8 fill-current" />

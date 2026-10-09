@@ -21,10 +21,11 @@ class TicketCreatedNotification extends Notification implements ShouldQueue
     public function toDatabase(object $notifiable): array
     {
         return [
-            'ticket_id'     => $this->ticket->id,
+            'type' => 'ticket_created',
+            'ticket_id' => $this->ticket->id,
             'ticket_number' => $this->ticket->ticket_number,
-            'title'         => $this->ticket->title,
-            'message'       => 'Tiket baru ditambahkan oleh ' . ($this->ticket->creator->name ?? 'System'),
+            'title' => $this->ticket->title,
+            'message' => 'Tiket baru ditambahkan oleh '.($this->ticket->creator->name ?? 'System'),
         ];
     }
 }

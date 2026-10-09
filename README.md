@@ -107,10 +107,37 @@ php artisan telegram:notif-test
 ```
 
 ### 4. Mode Webhook (Production)
-Untuk mendaftarkan webhook bot ke domain publik (HTTPS):
+Set `TELEGRAM_WEBHOOK_SECRET` (string acak) terlebih dahulu: Telegram akan mengirimkannya di header
+`X-Telegram-Bot-Api-Secret-Token` dan endpoint menolak request tanpa secret yang cocok. Lalu daftarkan
+webhook bot ke domain publik (HTTPS):
 ```bash
-php artisan telegram:webhook --set=https://domain-anda.com/api/telegram/webhook
+php artisan telegram:webhook set https://domain-anda.com/telegram/webhook
 ```
+
+### 5. Hak Akses Bot
+- Hanya akun staf (`admin`, `cs`, `lapangan`) yang bisa login ke bot; percobaan password dibatasi
+  5x per 15 menit per chat.
+- Bot memakai policy yang sama dengan web: menambah customer dan membuat tiket hanya untuk `admin`/`cs`.
+- Tiket dari bot dibuat lewat alur yang sama dengan form web (`TicketWorkflow`): nomor `TKT-0001`,
+  SLA sesuai prioritas, activity log, serta notifikasi email/in-app/Telegram.
+
+---
+
+## 🔐 Peran, Akun & SLA
+
+- **Registrasi publik ditutup.** Admin mengundang user dari menu *Users* (email + role); user mengisi
+  nama & password sendiri lewat link undangan (berlaku 24 jam). Admin pertama bisa dipromosikan via CLI:
+  ```bash
+  php artisan user:make-admin email@contoh.com
+  ```
+- **Role:** `admin` (akses penuh), `cs` (tiket, customer, laporan, status banner), `lapangan`
+  (hanya tiket yang ditugaskan/dibuat sendiri). Hak akses diatur oleh policy (`TicketPolicy`, `CustomerPolicy`).
+- **Alur status:** Open → Checking / Waiting Customer / Escalated → Solved → Closed (reopen ke Open).
+  Solved wajib catatan penyelesaian. Jam SLA berhenti saat *Waiting Customer*.
+- **SLA:** batas waktu per prioritas diatur lewat `SLA_HIGH`, `SLA_MEDIUM`, `SLA_LOW` (default 5h/8h/24h).
+  Tiket yang lewat batas ditandai oleh `php artisan tickets:check-sla`, dijadwalkan tiap 5 menit —
+  jalankan `php artisan schedule:work` (image Docker sudah menjalankannya lewat supervisor).
+- **Zona waktu:** timestamp disimpan dalam `APP_TIMEZONE` (default `UTC`, sama dengan data production).
 
 ---
 

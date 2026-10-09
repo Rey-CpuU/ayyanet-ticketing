@@ -28,12 +28,13 @@
         </div>
         <span class="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--muted)] bg-[var(--surface)] px-2.5 py-1 rounded border border-[var(--border)] shrink-0">
             <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            5 Jam
+            24 Jam
         </span>
     </div>
 
     <form method="POST" action="{{ route('register.invite', $invitation->token) }}" class="space-y-4">
         @csrf
+        <x-input-error :messages="$errors->get('token')" />
 
         <!-- Email Address (Locked & Pre-filled) -->
         <div>

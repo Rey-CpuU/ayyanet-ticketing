@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\SecurityHeadersMiddleware;
+use App\Providers\AuthServiceProvider;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
-use App\Http\Middleware\EnsureUserIsAdmin;
-use App\Http\Middleware\SecurityHeaders;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,18 +16,23 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->append(SecurityHeaders::class);
+        $middleware->append(SecurityHeadersMiddleware::class);
 
         $middleware->alias([
+            'role' => RoleMiddleware::class,
             'admin' => EnsureUserIsAdmin::class,
         ]);
 
-        // Vercel terminates TLS at the edge and forwards plain HTTP to the
-        // PHP function; trust its proxy headers so generated URLs use https.
+        // The app runs behind a TLS-terminating proxy (Render/Koyeb/Vercel);
+        // trust its forwarded headers so generated URLs use https.
         $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
-    })->create();
+    })
+    ->withProviders([
+        AuthServiceProvider::class,
+    ])
+    ->create();

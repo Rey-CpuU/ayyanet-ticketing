@@ -1,715 +1,2848 @@
-<x-app-layout>
-    <style>
-        @keyframes popoverFloat {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-6px); }
-        }
-    </style>
-    <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="font-display text-[17px] font-bold tracking-[-0.02em] text-[var(--foreground)]">Dashboard</h2>
-                <p class="mt-0.5 text-[12.5px] text-[var(--muted)]">Placement overview — every ticket needs a responsible agent</p>
-            </div>
-            <a href="{{ route('tickets.create') }}" class="btn-primary">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                </svg>
-                New Ticket
-            </a>
-        </div>
-    </x-slot>
+@php
+    $channelOptions = [
+        ['key' => 'All', 'label' => 'Semua Saluran', 'icon' => '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" stroke-linecap="round"/></svg>'],
+        ['key' => 'Email', 'label' => 'Email', 'icon' => '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 5.5A1.5 1.5 0 0 1 4 4h12a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 16 16H4a1.5 1.5 0 0 1-1.5-1.5v-9Zm1.2.8 6.3 4.5 6.3-4.5H3.7Zm12.8 8.2V6.7l-5.6 4-5.6-4v7.8h11.2Z"/></svg>'],
+        ['key' => 'Live Chat', 'label' => 'Live Chat', 'icon' => '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4.5A2.5 2.5 0 0 1 5.5 2h9A2.5 2.5 0 0 1 17 4.5v6A2.5 2.5 0 0 1 14.5 13H9l-4.5 3v-3H5.5A2.5 2.5 0 0 1 3 10.5v-6Zm2 1.5h10v1H5V6Zm0 3h7v1H5v-1Z"/></svg>'],
+        ['key' => 'WhatsApp', 'label' => 'WhatsApp', 'icon' => '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 1.8A8.2 8.2 0 0 0 3.1 13.7L2 18l4.4-1.1A8.2 8.2 0 1 0 10 1.8Zm4.7 11.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1.3.2-4.1-1.2-3.5-1.7-5.8-6.1-6-6.4-.2-.4-.2-.9.1-1.3.1-.1.3-.2.5-.3l.5-.4c.2-.1.3-.1.5 0l.7.5c.2.2.4.5.5.8.1.2.3.5.1.6-.1.2-.2.3-.3.4-.2.2-.4.4-.6.6-.2.2-.1.4.1.6l.7.8c.3.3.7.5 1 .8.2.1.4.2.7.1.2-.1.7-.8.9-1.1.2-.3.4-.3.7-.2l.9.4c.2.1.4.3.4.5.1.2 0 .6-.2.8Z"/></svg>'],
+        ['key' => 'Web Form', 'label' => 'Web Form', 'icon' => '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4.5A2.5 2.5 0 0 1 5.5 2h9A2.5 2.5 0 0 1 17 4.5v11A2.5 2.5 0 0 1 14.5 18h-9A2.5 2.5 0 0 1 3 15.5v-11Zm2.5-.5a.5.5 0 0 0-.5.5v1h10v-1a.5.5 0 0 0-.5-.5h-9Zm-.5 4v6h10v-6H5Zm2 1h4v1H7v-1Zm0 2h6v1H7v-1Z"/></svg>'],
+        ['key' => 'Portal', 'label' => 'Portal', 'icon' => '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 2.3A7.7 7.7 0 1 1 2.3 10 7.7 7.7 0 0 1 10 2.3Zm0 1.5a6.2 6.2 0 1 0 6.2 6.2A6.2 6.2 0 0 0 10 3.8Zm-1 2.2h2v5.2H9V6Zm0 6.1h2v1.5H9v-1.5Z"/></svg>'],
+    ];
 
-    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        @if (session('success'))
-        <div class="mb-5 rounded-md border border-[var(--green-text-30)] bg-[var(--green-text-10)] px-4 py-3 text-[13px] font-medium text-[var(--green-text)]">
-            {{ session('success') }}
-        </div>
-        @endif
+    $selectedChannel = $channel ?? 'All';
 
-        {{-- Operational status strip --}}
-        <div class="mb-5 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-            <div class="fx-chip border-[var(--amber-text-40)] bg-[var(--amber-text-07)] text-[var(--amber-text)]">
-                <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M8 1.5l1.6 4.9 5.1.1-4 3.1 1.5 4.9-4.2-2.9-4.2 2.9 1.5-4.9-4-3.1 5.1-.1L8 1.5z" fill="currentColor" opacity=".9" />
-                </svg>
-                <span>{{ $stats['unassigned'] }} unassigned</span>
-                <span class="hidden text-[10.5px] font-medium text-[var(--amber-text-60)] sm:inline">— needs placement</span>
-            </div>
-            <div class="fx-chip border-[var(--red-text-40)] bg-[var(--red-solid-07)] text-[var(--red-bright)]">
-                <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M8 10V4M8 12.5v.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-                    <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3" opacity=".55" />
-                </svg>
-                <span>{{ $stats['high'] }} high priority</span>
-            </div>
-            <div class="fx-chip border-[var(--green-text-30)] bg-[var(--green-text-06)] text-[var(--green-text)]">
-                <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M2.5 8.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span>{{ $stats['solved'] }} solved</span>
-                <span class="hidden text-[10.5px] font-medium text-[var(--green-text-60)] sm:inline">this week</span>
-            </div>
-        </div>
+    $channelMeta = function ($ticket) {
+        $raw = strtolower($ticket->category ?? 'Email');
 
-        {{-- Status stat cards --}}
-        @php
-        $statCards = [
-            ['label' => 'Total', 'value' => $stats['total'], 'textClass' => 'text-[var(--foreground)]', 'dotClass' => 'bg-[var(--foreground)]', 'hint' => 'All created'],
-            ['label' => 'Open', 'value' => $stats['open'], 'textClass' => 'text-[var(--red-bright)]', 'dotClass' => 'bg-[var(--red-bright)]', 'hint' => 'Need response'],
-            ['label' => 'Checking', 'value' => $stats['checking'], 'textClass' => 'text-[var(--violet-text)]', 'dotClass' => 'bg-[var(--violet-text)]', 'hint' => 'Under review'],
-            ['label' => 'Waiting', 'value' => $stats['waiting'], 'textClass' => 'text-[var(--amber-text)]', 'dotClass' => 'bg-[var(--amber-text)]', 'hint' => 'Waiting customer'],
-            ['label' => 'Escalated', 'value' => $stats['escalated'], 'textClass' => 'text-[var(--orange-text)]', 'dotClass' => 'bg-[var(--orange-text)]', 'hint' => 'Higher tier'],
-            ['label' => 'Solved', 'value' => $stats['solved'], 'textClass' => 'text-[var(--green-text)]', 'dotClass' => 'bg-[var(--green-text)]', 'hint' => 'Completed'],
-        ];
-        @endphp
+        return match ($raw) {
+            'email' => ['label' => 'Email', 'class' => 'email', 'icon' => '<svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 5.5A1.5 1.5 0 0 1 4 4h12a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 16 16H4a1.5 1.5 0 0 1-1.5-1.5v-9Zm1.2.8 6.3 4.5 6.3-4.5H3.7Zm12.8 8.2V6.7l-5.6 4-5.6-4v7.8h11.2Z"/></svg>'],
+            'live chat' => ['label' => 'Live Chat', 'class' => 'live-chat', 'icon' => '<svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4.5A2.5 2.5 0 0 1 5.5 2h9A2.5 2.5 0 0 1 17 4.5v6A2.5 2.5 0 0 1 14.5 13H9l-4.5 3v-3H5.5A2.5 2.5 0 0 1 3 10.5v-6Zm2 1.5h10v1H5V6Zm0 3h7v1H5v-1Z"/></svg>'],
+            'whatsapp' => ['label' => 'WhatsApp', 'class' => 'whatsapp', 'icon' => '<svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 1.8A8.2 8.2 0 0 0 3.1 13.7L2 18l4.4-1.1A8.2 8.2 0 1 0 10 1.8Zm4.7 11.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1.3.2-4.1-1.2-3.5-1.7-5.8-6.1-6-6.4-.2-.4-.2-.9.1-1.3.1-.1.3-.2.5-.3l.5-.4c.2-.1.3-.1.5 0l.7.5c.2.2.4.5.5.8.1.2.3.5.1.6-.1.2-.2.3-.3.4-.2.2-.4.4-.6.6-.2.2-.1.4.1.6l.7.8c.3.3.7.5 1 .8.2.1.4.2.7.1.2-.1.7-.8.9-1.1.2-.3.4-.3.7-.2l.9.4c.2.1.4.3.4.5.1.2 0 .6-.2.8Z"/></svg>'],
+            'web form' => ['label' => 'Web Form', 'class' => 'web-form', 'icon' => '<svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4.5A2.5 2.5 0 0 1 5.5 2h9A2.5 2.5 0 0 1 17 4.5v11A2.5 2.5 0 0 1 14.5 18h-9A2.5 2.5 0 0 1 3 15.5v-11Zm2.5-.5a.5.5 0 0 0-.5.5v1h10v-1a.5.5 0 0 0-.5-.5h-9Zm-.5 4v6h10v-6H5Zm2 1h4v1H7v-1Zm0 2h6v1H7v-1Z"/></svg>'],
+            'portal' => ['label' => 'Portal', 'class' => 'portal', 'icon' => '<svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 2.3A7.7 7.7 0 1 1 2.3 10 7.7 7.7 0 0 1 10 2.3Zm0 1.5a6.2 6.2 0 1 0 6.2 6.2A6.2 6.2 0 0 0 10 3.8Zm-1 2.2h2v5.2H9V6Zm0 6.1h2v1.5H9v-1.5Z"/></svg>'],
+            default => ['label' => 'Email', 'class' => 'email', 'icon' => '<svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 5.5A1.5 1.5 0 0 1 4 4h12a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 16 16H4a1.5 1.5 0 0 1-1.5-1.5v-9Zm1.2.8 6.3 4.5 6.3-4.5H3.7Zm12.8 8.2V6.7l-5.6 4-5.6-4v7.8h11.2Z"/></svg>'],
+        };
+    };
 
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            @foreach ($statCards as $card)
-            <div class="card rounded-lg p-4">
-                <div class="mb-2 flex items-center gap-1.5">
-                    <span class="h-1.5 w-1.5 rounded-full {{ $card['dotClass'] }}"></span>
-                    <span class="truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">{{ $card['label'] }}</span>
-                </div>
-                <div class="fx-glow-text font-display text-[24px] font-bold leading-none {{ $card['textClass'] }}">{{ $card['value'] }}</div>
-                <div class="mt-1.5 text-[11px] text-[var(--muted)]">{{ $card['hint'] }}</div>
-            </div>
-            @endforeach
-        </div>
+    $detailChannel = $selected ? $channelMeta($selected) : ['label' => 'Email', 'class' => 'email', 'icon' => '<svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 5.5A1.5 1.5 0 0 1 4 4h12a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 16 16H4a1.5 1.5 0 0 1-1.5-1.5v-9Zm1.2.8 6.3 4.5 6.3-4.5H3.7Zm12.8 8.2V6.7l-5.6 4-5.6-4v7.8h11.2Z"/></svg>'];
+@endphp
 
-        {{-- Ticket queue + side panel --}}
-        <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
-            <div class="card overflow-hidden rounded-lg"
-                x-data="{
-                    tab: localStorage.getItem('ayyanet_ticket_queue_tab') || 'unassigned',
-                    setTab(t) {
-                        this.tab = t;
-                        localStorage.setItem('ayyanet_ticket_queue_tab', t);
-                    },
-                    unassignedCount: {{ (int) $stats['unassigned'] }},
-                    mineCount: {{ (int) $stats['mine'] }},
-                    allCount: {{ (int) $tickets->count() }},
-                    currentUserId: {{ (int) auth()->id() }},
-                    search: '',
-                    status: '',
-                    priority: '',
-                    assignee: '',
-                    customer: '',
-                    async assignTicket(ticketId, selectEl, rowData) {
-                        const newAssigneeId = selectEl.value;
-                        const oldAssigneeId = selectEl.dataset.currentAssignee || '';
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <title>Ticket Queue — AyyNet</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <style>
+            /* ============================================
+               PREMIUM ENTERPRISE DASHBOARD — AYYNET ISP
+               Linear × Stripe × Vercel × Arc
+               ============================================ */
 
-                        // Immediate visual feedback
-                        if (!newAssigneeId) {
-                            selectEl.className = 'select-chip inline-flex items-center gap-1.5 rounded-full border text-[13px] font-semibold transition border-dashed border-[var(--amber-text-50)] bg-[var(--amber-text-06)] text-[var(--amber-text)] fx-unassigned-pulse';
-                        } else {
-                            selectEl.className = 'select-chip inline-flex items-center gap-1.5 rounded-full border text-[13px] font-semibold transition border-[var(--border-strong)] bg-[var(--surface-3)] text-[var(--foreground)]';
-                        }
+            :root {
+                --bg: #0B0D12;
+                --surface: #141824;
+                --card: #1A1F2D;
+                --card-hover: #1E2434;
+                --card-border: rgba(255, 255, 255, 0.05);
+                --card-border-hover: rgba(124, 92, 255, 0.2);
+                --primary: #7C5CFF;
+                --primary-soft: rgba(124, 92, 255, 0.12);
+                --primary-border: rgba(124, 92, 255, 0.3);
+                --success: #34D399;
+                --success-soft: rgba(52, 211, 153, 0.1);
+                --warning: #FBBF24;
+                --warning-soft: rgba(251, 191, 36, 0.1);
+                --danger: #FF5D73;
+                --danger-soft: rgba(255, 93, 115, 0.1);
+                --blue: #7CB8FF;
+                --blue-soft: rgba(124, 184, 255, 0.1);
+                --cyan: #67E8F9;
+                --cyan-soft: rgba(103, 232, 249, 0.1);
+                --text: #FFFFFF;
+                --text-2: #A0A6B4;
+                --text-3: #6E7585;
 
-                        try {
-                            const res = await fetch(`/tickets/${ticketId}/assignee`, {
-                                method: 'PATCH',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').content,
-                                },
-                                body: JSON.stringify({ assigned_to: newAssigneeId ? parseInt(newAssigneeId) : null }),
-                            });
+                /* Premium layered shadows — subtle 3D */
+                --shadow-card:
+                    0 12px 40px rgba(0, 0, 0, 0.45),
+                    0 4px 12px rgba(124, 92, 255, 0.06),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+                --shadow-hover:
+                    0 20px 50px rgba(0, 0, 0, 0.55),
+                    0 8px 20px rgba(124, 92, 255, 0.12),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+                --shadow-btn:
+                    0 4px 14px rgba(124, 92, 255, 0.25),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                --shadow-btn-hover:
+                    0 8px 24px rgba(124, 92, 255, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+                --shadow-sidebar:
+                    0 0 0 1px rgba(255, 255, 255, 0.04),
+                    0 24px 60px rgba(0, 0, 0, 0.6),
+                    0 8px 24px rgba(124, 92, 255, 0.05);
 
-                            if (res.ok) {
-                                selectEl.dataset.currentAssignee = newAssigneeId;
+                --radius: 16px;
+                --radius-lg: 20px;
+                --radius-xl: 24px;
 
-                                let newTabKey = 'all';
-                                if (!newAssigneeId) {
-                                    newTabKey = 'unassigned';
-                                } else if (parseInt(newAssigneeId) === this.currentUserId) {
-                                    newTabKey = 'mine';
-                                }
+                --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+                --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
 
-                                if (rowData) {
-                                    rowData.rowTabKey = newTabKey;
-                                }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
 
-                                // Update counters
-                                if (!oldAssigneeId && newAssigneeId) {
-                                    this.unassignedCount = Math.max(0, this.unassignedCount - 1);
-                                } else if (oldAssigneeId && !newAssigneeId) {
-                                    this.unassignedCount++;
-                                }
+            html, body {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                background: var(--bg);
+                color: var(--text);
+                font-size: 14px;
+                line-height: 1.5;
+                -webkit-font-smoothing: antialiased;
+                text-rendering: optimizeLegibility;
+            }
 
-                                if (oldAssigneeId && parseInt(oldAssigneeId) === this.currentUserId && parseInt(newAssigneeId) !== this.currentUserId) {
-                                    this.mineCount = Math.max(0, this.mineCount - 1);
-                                } else if ((!oldAssigneeId || parseInt(oldAssigneeId) !== this.currentUserId) && parseInt(newAssigneeId) === this.currentUserId) {
-                                    this.mineCount++;
-                                }
-                            } else {
-                                selectEl.value = oldAssigneeId;
-                            }
-                        } catch (e) {
-                            console.error('Failed to assign ticket:', e);
-                            selectEl.value = oldAssigneeId;
-                        }
-                    }
-                }">
-                <div class="flex flex-col gap-3 border-b border-[var(--border)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                    <div class="flex items-center gap-2.5">
-                        <h3 class="font-display text-[14px] font-bold tracking-[-0.01em] text-[var(--foreground)]">Ticket Queue</h3>
-                        <span class="rounded-full border border-[var(--border-strong)] bg-[var(--surface)] px-2 py-[2px] font-mono text-[10.5px] text-[var(--muted)]">{{ $tickets->count() }} total</span>
-                    </div>
+            body { min-height: 100vh; }
 
-                    {{-- Queue tabs with smooth sliding pill animation --}}
-                    <div class="relative flex overflow-x-auto rounded-full border border-[var(--border-strong)] bg-[var(--surface)] p-1">
-                        {{-- Sliding Active Pill Indicator --}}
-                        <div class="absolute top-1 bottom-1 rounded-full bg-gradient-to-r from-[var(--accent-cta)] to-[var(--accent-cta-hover)] shadow-[0_0_16px_var(--glow-accent)] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
-                            :style="{
-                                 left: tab === 'unassigned' ? $refs.tabUnassigned?.offsetLeft + 'px' : (tab === 'mine' ? $refs.tabMine?.offsetLeft + 'px' : $refs.tabAll?.offsetLeft + 'px'),
-                                 width: tab === 'unassigned' ? $refs.tabUnassigned?.offsetWidth + 'px' : (tab === 'mine' ? $refs.tabMine?.offsetWidth + 'px' : $refs.tabAll?.offsetWidth + 'px')
-                             }"
-                            aria-hidden="true">
-                        </div>
+            button, input, select, textarea { font: inherit; color: inherit; }
+            button { cursor: pointer; background: none; border: none; }
+            a { text-decoration: none; color: inherit; }
 
-                        <button type="button" x-ref="tabUnassigned" @click="setTab('unassigned')"
-                            :class="tab === 'unassigned' ? 'text-white' : 'text-[var(--muted)] hover:text-[var(--foreground)]'"
-                            class="relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors duration-200">
-                            Unassigned
-                            <span class="font-mono text-[10.5px] opacity-80" x-text="unassignedCount">{{ $stats['unassigned'] }}</span>
-                        </button>
-                        <button type="button" x-ref="tabMine" @click="setTab('mine')"
-                            :class="tab === 'mine' ? 'text-white' : 'text-[var(--muted)] hover:text-[var(--foreground)]'"
-                            class="relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors duration-200">
-                            Mine
-                            <span class="font-mono text-[10.5px] opacity-80" x-text="mineCount">{{ $stats['mine'] }}</span>
-                        </button>
-                        <button type="button" x-ref="tabAll" @click="setTab('all')"
-                            :class="tab === 'all' ? 'text-white' : 'text-[var(--muted)] hover:text-[var(--foreground)]'"
-                            class="relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors duration-200">
-                            All
-                            <span class="font-mono text-[10.5px] opacity-80" x-text="allCount">{{ $tickets->count() }}</span>
-                        </button>
-                    </div>
-                </div>
+            :focus-visible {
+                outline: 2px solid var(--primary);
+                outline-offset: 2px;
+                border-radius: 6px;
+            }
 
-                {{-- Filter & Live Search bar --}}
-                <div class="border-b border-[var(--border)] bg-[var(--surface-3)] px-4 py-3 sm:px-5"
-                    x-data="{
-                         query: '{{ request('search', '') }}',
-                         liveResults: [],
-                         isLoading: false,
-                         isOpen: false,
-                         async doLiveSearch() {
-                             const q = this.query.trim();
-                             if (q.length === 0) {
-                                 this.liveResults = [];
-                                 this.isOpen = false;
-                                 return;
-                             }
-                             this.isLoading = true;
-                             try {
-                                 const res = await fetch(`/tickets/live-search?q=${encodeURIComponent(q)}`, {
-                                     headers: { 'Accept': 'application/json' }
-                                 });
-                                 if (res.ok) {
-                                     this.liveResults = await res.json();
-                                     this.isOpen = true;
-                                 }
-                             } catch (e) {
-                                 console.error(e);
-                             } finally {
-                                 this.isLoading = false;
-                             }
-                         }
-                     }"
-                    @click.outside="isOpen = false">
-                    <form method="GET" action="{{ route('dashboard') }}" class="flex flex-wrap items-center gap-2">
-                        <div class="relative min-w-[200px] flex-1">
-                            <div class="relative">
-                                <input type="text"
-                                    name="search"
-                                    x-model="query"
-                                    @input.debounce.250ms="doLiveSearch()"
-                                    @focus="if (liveResults.length > 0) isOpen = true"
-                                    @keydown.escape="isOpen = false"
-                                    autocomplete="off"
-                                    placeholder="Live search: nomor (TCK-...), nama customer, inisial, title..."
-                                    class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] pl-8 pr-8 py-1.5 text-[12.5px] text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--accent)] focus:outline-none" />
+            /* ===== AMBIENT BACKGROUND ===== */
+            .dashboard-shell {
+                display: flex;
+                min-height: 100vh;
+                padding: 16px;
+                gap: 16px;
+                position: relative;
+                overflow: hidden;
+                background:
+                    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(124, 92, 255, 0.07), transparent 55%),
+                    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(124, 184, 255, 0.05), transparent 55%),
+                    var(--bg);
+            }
 
-                                {{-- Search Icon --}}
-                                <svg class="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--muted)]" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
-                                </svg>
+            /* ===== FLOATING SIDEBAR ===== */
+            .sidebar {
+                width: 232px;
+                min-width: 232px;
+                background: linear-gradient(180deg, #161A26 0%, #12151F 100%);
+                border: 1px solid var(--card-border);
+                border-radius: var(--radius-xl);
+                padding: 20px 14px;
+                display: flex;
+                flex-direction: column;
+                position: sticky;
+                top: 16px;
+                height: calc(100vh - 32px);
+                z-index: 40;
+                box-shadow: var(--shadow-sidebar);
+                transition: width var(--transition), transform var(--transition), box-shadow var(--transition);
+            }
 
-                                {{-- Loading Spinner --}}
-                                <div x-show="isLoading" class="absolute right-2.5 top-1/2 -translate-y-1/2" x-cloak>
-                                    <svg class="h-3.5 w-3.5 animate-spin text-[var(--accent)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                </div>
-                            </div>
+            .sidebar.collapsed {
+                width: 76px;
+                min-width: 76px;
+            }
 
-                            {{-- AJAX Live Search Dropdown Popup --}}
-                            <div x-show="isOpen && query.trim().length > 0"
-                                x-cloak
-                                x-transition:enter="transition ease-out duration-150"
-                                x-transition:enter-start="opacity-0 translate-y-1"
-                                x-transition:enter-end="opacity-100 translate-y-0"
-                                class="absolute left-0 right-0 top-full z-50 mt-1.5 max-h-80 overflow-y-auto rounded-lg border border-[var(--border-strong)] bg-[var(--surface-2)] shadow-2xl backdrop-blur-md">
+            .sidebar.collapsed .brand-text,
+            .sidebar.collapsed .brand-subtitle,
+            .sidebar.collapsed .nav-label,
+            .sidebar.collapsed .nav-badge,
+            .sidebar.collapsed .user-meta,
+            .sidebar.collapsed .sidebar-footer-text {
+                display: none;
+            }
 
-                                <div class="border-b border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-[11px] font-semibold text-[var(--muted)] flex justify-between items-center">
-                                    <span>Hasil Pencarian Live (<span x-text="liveResults.length"></span>)</span>
-                                    <span class="text-[10px] text-[var(--muted-strong)]">ESC untuk menutup</span>
-                                </div>
+            .sidebar.collapsed .nav-item {
+                justify-content: center;
+                padding: 12px;
+            }
 
-                                <template x-if="liveResults.length === 0 && !isLoading">
-                                    <div class="px-4 py-6 text-center text-[12.5px] text-[var(--muted)]">
-                                        Tidak ada tiket ditemukan untuk "<span class="font-semibold text-[var(--foreground)]" x-text="query"></span>"
-                                    </div>
-                                </template>
+            .sidebar.collapsed .user-card {
+                justify-content: center;
+                padding: 10px 6px;
+            }
 
-                                <template x-for="item in liveResults" :key="item.id">
-                                    <a :href="item.url" class="group flex items-start gap-3 border-b border-[var(--border-60)] p-3 transition hover:bg-[var(--hover-overlay)] last:border-b-0">
-                                        {{-- Initial Avatar --}}
-                                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--surface-3)] text-[11px] font-bold text-[var(--accent-text-strong)]"
-                                            x-text="item.initial">
-                                        </div>
+            .sidebar.collapsed .profile-avatar {
+                margin: 0;
+            }
 
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                                <span class="font-mono text-[11.5px] font-bold text-[var(--accent)]" x-text="item.ticket_number"></span>
-                                                <span class="text-[var(--border-strong)]">·</span>
-                                                <span class="truncate text-[12.5px] font-semibold text-[var(--foreground)]" x-text="item.customer_name"></span>
-                                                <template x-if="item.customer_phone">
-                                                    <span class="inline-flex items-center gap-1 font-mono text-[11px] text-[var(--muted-strong)] bg-[var(--surface-3)] px-1.5 py-[1px] rounded border border-[var(--border-strong)]">
-                                                        <svg class="h-3 w-3 text-[var(--muted)] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                                                        </svg>
-                                                        <span x-text="item.customer_phone"></span>
-                                                    </span>
-                                                </template>
-                                                <span class="text-[10.5px] text-[var(--muted)]" x-text="item.category ? '· ' + item.category : ''"></span>
-                                            </div>
+            .brand-wrap {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 4px 8px 18px;
+            }
 
-                                            <p class="mt-1 truncate text-[13px] font-medium text-[var(--foreground)] group-hover:text-[var(--accent-text)]" x-text="item.title"></p>
+            .brand-icon {
+                width: 38px;
+                height: 38px;
+                display: grid;
+                place-items: center;
+                border-radius: 12px;
+                background: linear-gradient(135deg, #8B7CFF 0%, #6D4FFF 50%, #5C4FD8 100%);
+                color: #fff;
+                font-size: 18px;
+                font-weight: 800;
+                flex-shrink: 0;
+                box-shadow:
+                    0 8px 20px rgba(124, 92, 255, 0.35),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+            }
 
-                                            <div class="mt-1.5 flex flex-wrap items-center gap-2 text-[10.5px] text-[var(--muted)]">
-                                                <span class="rounded bg-[var(--surface-3)] px-1.5 py-0.5 font-medium border border-[var(--border-strong)]" x-text="'Status: ' + item.status"></span>
-                                                <span class="rounded bg-[var(--surface-3)] px-1.5 py-0.5 font-medium border border-[var(--border-strong)]" x-text="'Priority: ' + item.priority"></span>
-                                                <span class="ml-auto font-mono text-[10px]" x-text="item.created_at"></span>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </template>
-                            </div>
-                        </div>
+            .brand-text {
+                font-size: 1.1rem;
+                font-weight: 800;
+                letter-spacing: -0.03em;
+                line-height: 1;
+            }
 
-                        <x-custom-select
-                            name="status"
-                            :value="request('status', '')"
-                            placeholder="All Statuses"
-                            :options="[
-                                '' => 'All Statuses',
-                                'Open' => 'Open',
-                                'Checking' => 'Checking',
-                                'Waiting Customer' => 'Waiting Customer',
-                                'Escalated' => 'Escalated',
-                                'Solved' => 'Solved',
-                                'Closed' => 'Closed'
-                            ]"
-                            width="w-48" />
+            .brand-subtitle {
+                color: var(--text-3);
+                font-size: 0.7rem;
+                margin-top: 2px;
+                letter-spacing: 0.02em;
+            }
 
-                        <x-custom-select
-                            name="priority"
-                            :value="request('priority', '')"
-                            placeholder="All Priorities"
-                            :options="[
-                                '' => 'All Priorities',
-                                'High' => 'High',
-                                'Medium' => 'Medium',
-                                'Low' => 'Low'
-                            ]"
-                            width="w-44" />
+            .sidebar-toggle {
+                margin-left: auto;
+                width: 30px;
+                height: 30px;
+                display: grid;
+                place-items: center;
+                border-radius: 9px;
+                color: var(--text-3);
+                transition: background var(--transition), color var(--transition);
+            }
 
-                        <div class="w-full sm:w-auto">
-                            <button type="submit" class="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3.5 py-2 text-[12.5px] font-semibold text-[var(--foreground)] hover:bg-[var(--surface-3)] hover:border-[var(--accent)] sm:w-auto transition">
-                                Filter
-                            </button>
-                        </div>
-                        @if(request()->anyFilled(['search', 'status', 'priority']))
-                        <a href="{{ route('dashboard') }}" class="text-[12px] font-semibold text-[var(--accent)] hover:text-[var(--accent-text)] transition">
-                            Clear
-                        </a>
-                        @endif
-                    </form>
-                </div>
+            .sidebar-toggle:hover {
+                background: rgba(255, 255, 255, 0.06);
+                color: var(--text);
+            }
 
-                <div class="max-h-[calc(100vh-320px)] overflow-y-auto">
-                    @forelse ($tickets as $ticket)
-                    @php
-                    $status = $ticket->status;
-                    $priority = $ticket->priority;
-                    $priorityColor = match ($priority) {
-                    'High' => 'var(--amber-text)',
-                    'Medium' => 'var(--blue-text)',
-                    default => 'var(--muted)',
-                    };
-                    $statusBadge = match ($status) {
-                    'Open' => ['bg' => 'color-mix(in srgb, var(--red-text) 12%, transparent)', 'text' => 'var(--red-text)'],
-                    'Checking' => ['bg' => 'color-mix(in srgb, var(--violet-text) 15%, transparent)', 'text' => 'var(--violet-text)'],
-                    'Waiting Customer' => ['bg' => 'color-mix(in srgb, var(--amber-text) 12%, transparent)', 'text' => 'var(--amber-text)'],
-                    'Escalated' => ['bg' => 'color-mix(in srgb, var(--orange-text) 14%, transparent)', 'text' => 'var(--orange-text)'],
-                    'Solved' => ['bg' => 'color-mix(in srgb, var(--green-text) 12%, transparent)', 'text' => 'var(--green-text)'],
-                    default => ['bg' => 'color-mix(in srgb, var(--slate-text) 12%, transparent)', 'text' => 'var(--slate-text)'],
-                    };
-                    $tabKey = $ticket->assigned_to === null
-                    ? 'unassigned'
-                    : ($ticket->assigned_to === auth()->id() ? 'mine' : 'all');
-                    @endphp
-                    <div class="ticket-row-interactive border-b border-[var(--border)] px-4 py-3.5 sm:px-5"
-                        x-data="{
-                            rowTabKey: '{{ $tabKey }}',
-                            rowStatus: '{{ $ticket->status }}',
-                            rowTitle: '{{ addslashes($ticket->title) }}',
-                            rowPriority: '{{ $ticket->priority }}',
-                            rowCategory: '{{ addslashes($ticket->category ?? '') }}',
-                            getStatusBadgeClass(st) {
-                                switch(st) {
-                                    case 'Open': return 'badge-red';
-                                    case 'Checking': return 'badge-violet';
-                                    case 'Waiting Customer': return 'badge-amber';
-                                    case 'Escalated': return 'badge-orange';
-                                    case 'Solved': return 'badge-green';
-                                    default: return 'badge-slate';
-                                }
-                            },
-                            getPriorityClass(prio) {
-                                if (prio === 'High') return 'priority-high';
-                                if (prio === 'Medium') return 'priority-medium';
-                                return 'priority-default';
-                            },
-                            getPriorityDotClass(prio) {
-                                if (prio === 'High') return 'priority-dot-high';
-                                if (prio === 'Medium') return 'priority-dot-medium';
-                                return 'priority-dot-default';
-                            }
-                        }"
-                        @ticket-updated.window="
-                            if ($event.detail.id === {{ $ticket->id }}) {
-                                if ($event.detail.status) rowStatus = $event.detail.status;
-                                if ($event.detail.title) rowTitle = $event.detail.title;
-                                if ($event.detail.priority) rowPriority = $event.detail.priority;
-                                if ($event.detail.category) rowCategory = $event.detail.category;
-                            }
-                        "
-                        x-show="tab === 'all' || tab === rowTabKey"
-                        x-cloak>
-                        <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-                            <div class="flex min-w-0 flex-1 items-center gap-3">
-                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--surface-3)] text-[11px] font-semibold text-[var(--foreground)] transition-transform duration-200 group-hover:scale-105">
-                                    {{ strtoupper(substr($ticket->customer->name ?? '?', 0, 2)) }}
-                                </div>
-                                <div class="min-w-0">
-                                    <button type="button" @click="$dispatch('open-ticket-modal', { ticketId: {{ $ticket->id }} })" class="ticket-title-link block truncate text-left text-[13.5px] font-medium text-[var(--foreground)] transition-colors duration-200" x-text="rowTitle">{{ $ticket->title }}</button>
+            .side-nav {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                margin-top: 4px;
+            }
 
-                                    {{-- Customer + assignee tag --}}
-                                    <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11.5px] text-[var(--muted)]">
-                                        <span class="truncate">{{ $ticket->customer->name ?? 'Unknown' }}</span>
-                                        <span class="font-mono text-[10.5px]">{{ $ticket->ticket_number }}</span>
-                                        <span class="text-[var(--border-strong)]">·</span>
+            .nav-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 11px 12px;
+                border-radius: 12px;
+                color: var(--text-2);
+                font-weight: 500;
+                font-size: 0.88rem;
+                position: relative;
+                transition: background var(--transition), color var(--transition), transform var(--transition), box-shadow var(--transition);
+            }
 
-                                        <div class="inline-flex">
-                                            <select name="assigned_to"
-                                                data-current-assignee="{{ $ticket->assigned_to ?? '' }}"
-                                                @change="assignTicket({{ $ticket->id }}, $el, $data)"
-                                                class="select-chip inline-flex items-center gap-1.5 rounded-full border text-[13px] font-semibold transition
-                                                        {{ $ticket->assigned_to === null
-                                                            ? 'border-dashed border-[var(--amber-text-50)] bg-[var(--amber-text-06)] text-[var(--amber-text)] fx-unassigned-pulse'
-                                                            : 'border-[var(--border-strong)] bg-[var(--surface-3)] text-[var(--foreground)]' }}">
-                                                <option value="" @selected($ticket->assigned_to === null)>Unassigned</option>
-                                                @foreach ($assignableUsers as $agent)
-                                                <option value="{{ $agent->id }}" @selected($ticket->assigned_to === $agent->id)>{{ $agent->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+            .nav-item:hover {
+                background: rgba(255, 255, 255, 0.04);
+                color: var(--text);
+                transform: translateX(4px);
+            }
 
-                            <div class="flex shrink-0 flex-wrap items-center gap-1.5">
-                                <span class="badge" :class="getStatusBadgeClass(rowStatus)" x-text="rowStatus">{{ $status }}</span>
-                            </div>
-                        </div>
+            .nav-item.active {
+                background: linear-gradient(135deg, rgba(124, 92, 255, 0.16), rgba(124, 92, 255, 0.08));
+                color: #fff;
+                font-weight: 600;
+                box-shadow:
+                    0 4px 16px rgba(124, 92, 255, 0.12),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            }
 
-                        <div class="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px]">
-                            <span class="flex items-center gap-1.5">
-                                <span class="h-1.5 w-1.5 rounded-full" :class="getPriorityDotClass(rowPriority)"></span>
-                                <span class="font-mono uppercase tracking-[0.04em]" :class="getPriorityClass(rowPriority)" x-text="rowPriority">{{ $priority }}</span>
-                            </span>
-                            <template x-if="rowCategory">
-                                <span class="flex items-center gap-2.5">
-                                    <span class="text-[var(--border-strong)]">·</span>
-                                    <span class="text-[var(--muted)]" x-text="rowCategory">{{ $ticket->category }}</span>
-                                </span>
-                            </template>
-                            <span class="ml-auto font-mono text-[var(--muted)]">{{ $ticket->created_at->diffForHumans() }}</span>
-                            @if ($ticket->messages->count() > 0)
-                            <span class="flex items-center gap-1 font-mono text-[var(--muted)]">
-                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                                    <path d="M2 4a2 2 0 012-2h8a2 2 0 012 2v5a2 2 0 01-2 2H6l-3 3v-3H4a2 2 0 01-2-2V4z" fill="currentColor" opacity=".6" />
-                                </svg>
-                                {{ $ticket->messages->count() }}
-                            </span>
-                            @endif
-                        </div>
-                    </div>
-                    @empty
-                    <div class="px-5 py-16 text-center">
-                        <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-3)]">
-                            <svg width="22" height="22" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                                <rect x="1" y="2.5" width="14" height="11" rx="2" stroke="var(--muted)" stroke-width="1.3" />
-                                <path d="M1 5l7-3 7 3" stroke="var(--muted)" stroke-width="1.3" />
-                            </svg>
-                        </div>
-                        <p class="text-[13.5px] font-medium text-[var(--muted)]">No tickets yet</p>
-                        <a href="{{ route('tickets.create') }}" class="mt-3 inline-block text-[12.5px] font-semibold text-[var(--accent)] hover:text-[var(--accent-text)]">Create the first ticket →</a>
-                    </div>
-                    @endforelse
+            .nav-item.active::before {
+                content: '';
+                position: absolute;
+                left: -14px;
+                top: 22%;
+                bottom: 22%;
+                width: 3px;
+                border-radius: 0 3px 3px 0;
+                background: var(--primary);
+                box-shadow: 0 0 12px rgba(124, 92, 255, 0.6);
+            }
 
-                    <div class="px-5 py-3 border-t border-[var(--border)]">
-                        {{ $tickets->links() }}
-                    </div>
+            .nav-icon {
+                width: 20px;
+                height: 20px;
+                display: grid;
+                place-items: center;
+                flex-shrink: 0;
+                opacity: 0.8;
+                transition: opacity var(--transition), transform var(--transition);
+            }
 
-                    {{-- Per-tab empty states --}}
-                    <div class="px-5 py-10 text-center" x-show="tab === 'unassigned' && unassignedCount === 0" x-cloak>
-                        <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--green-text-08)]">
-                            <svg class="h-4.5 w-4.5 text-[var(--green-text)]" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                                <path d="M2.5 8.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                        </div>
-                        <p class="text-[13px] font-medium text-[var(--foreground)]">All tickets have a responsible agent</p>
-                        <p class="mt-0.5 text-[12px] text-[var(--muted)]">Nothing waiting for placement.</p>
-                    </div>
+            .nav-item:hover .nav-icon,
+            .nav-item.active .nav-icon {
+                opacity: 1;
+                transform: scale(1.1);
+            }
 
-                    <div class="px-5 py-10 text-center" x-show="tab === 'mine' && mineCount === 0" x-cloak>
-                        <p class="text-[13px] font-medium text-[var(--foreground)]">No tickets assigned to you</p>
-                        <p class="mt-0.5 text-[12px] text-[var(--muted)]">Grab one from the Unassigned tab.</p>
-                    </div>
-                </div>
-            </div>
+            .nav-badge {
+                margin-left: auto;
+                min-width: 22px;
+                height: 22px;
+                padding: 0 7px;
+                border-radius: 999px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--primary);
+                color: #fff;
+                font-size: 0.66rem;
+                font-weight: 700;
+                box-shadow: 0 2px 8px rgba(124, 92, 255, 0.3);
+            }
 
-            {{-- Latest tickets --}}
-            <div class="card h-fit overflow-hidden rounded-lg" x-data>
-                <div class="border-b border-[var(--border)] px-5 py-4">
-                    <h3 class="font-display text-[14px] font-bold tracking-[-0.01em] text-[var(--foreground)]">Recently Visited</h3>
-                </div>
-                <div class="divide-y divide-[var(--border)]">
-                    @forelse ($latestTickets as $ticket)
-                    <div class="ticket-row-interactive flex items-center justify-between px-5 py-3"
-                        x-data="{ rowTitle: '{{ addslashes($ticket->title) }}' }"
-                        @ticket-updated.window="if ($event.detail.id === {{ $ticket->id }} && $event.detail.title) rowTitle = $event.detail.title">
-                        <div class="min-w-0 flex-1 cursor-pointer" @click="$dispatch('open-ticket-modal', { ticketId: {{ $ticket->id }} })">
-                            <div class="flex items-center justify-between gap-2">
-                                <span class="font-mono text-[11px] font-medium text-[var(--accent)]">
-                                    {{ $ticket->ticket_number }}
-                                </span>
-                                <span class="font-mono text-[10.5px] text-[var(--muted)]">{{ $ticket->created_at->diffForHumans() }}</span>
-                            </div>
-                            <div class="ticket-title-link mt-1 truncate text-[12.5px] font-medium text-[var(--foreground)] transition-colors duration-200" x-text="rowTitle">{{ $ticket->title }}</div>
-                            <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-[var(--muted)]">
-                                <span>{{ $ticket->customer->name ?? 'Unknown' }}</span>
-                                @if ($ticket->assignee)
-                                <span class="flex items-center gap-1 rounded-full border border-[var(--border-strong)] bg-[var(--surface-3)] px-1.5 py-[1px] text-[10px] font-semibold text-[var(--accent-text-strong)]">
-                                    {{ strtoupper(substr($ticket->assignee->name, 0, 2)) }} · {{ $ticket->assignee->name }}
-                                </span>
-                                @else
-                                <span class="rounded-full border border-dashed border-[var(--amber-text-40)] px-1.5 py-[1px] text-[10px] font-semibold text-[var(--amber-text)]">unassigned</span>
-                                @endif
-                            </div>
-                        </div>
-                        {{-- Floating Quick Chat Popover --}}
-                        <div class="relative ml-3 shrink-0" x-data="quickChatPopover({{ $ticket->id }}, '{{ $ticket->ticket_number }}', '{{ addslashes($ticket->title) }}')" @open-quick-chat.window="if ($event.detail.ticketId !== ticketId) open = false">
-                            <button type="button"
-                                    @click.stop="toggle()"
-                                    class="rounded-md border border-[var(--border-strong)] bg-[var(--surface-3)] p-1.5 text-[var(--muted)] transition hover:bg-[var(--accent)] hover:text-white"
-                                    :class="open ? 'bg-[var(--accent)] text-white border-[var(--accent)]' : ''"
-                                    title="Quick Chat & Reply">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                                </svg>
-                            </button>
+            .nav-badge.muted {
+                background: rgba(255, 255, 255, 0.07);
+                color: var(--text-2);
+                box-shadow: none;
+            }
 
-                            {{-- Small Floating Popover Teleported to Body --}}
-                            <template x-teleport="body">
-                                <div x-show="open"
-                                     x-cloak
-                                     @click.away="open = false"
-                                     @keydown.escape.window="open = false"
-                                     x-transition:enter="transition ease-out duration-200"
-                                     x-transition:enter-start="opacity-0 scale-95 translate-y-4"
-                                     x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                                     x-transition:leave="transition ease-in duration-150"
-                                     x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                                     x-transition:leave-end="opacity-0 scale-95 translate-y-4"
-                                     style="background-color: #121824; border: 1px solid var(--border-strong); z-index: 9999; animation: popoverFloat 3s ease-in-out infinite;"
-                                     class="fixed bottom-6 right-6 w-96 max-w-[calc(100vw-2rem)] rounded-2xl p-4 shadow-2xl">
-                                    
-                                    {{-- Header --}}
-                                    <div class="flex items-center justify-between border-b border-[var(--border)] pb-2.5 mb-2.5">
-                                        <div class="flex items-center gap-2 min-w-0">
-                                            <span class="font-mono text-xs font-bold text-[var(--accent)]" x-text="ticketNumber"></span>
-                                            <span class="text-xs font-semibold text-white truncate max-w-[200px]" x-text="ticketTitle"></span>
-                                        </div>
-                                        <button @click="open = false" type="button" class="text-[var(--muted)] hover:text-white text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10 transition">✕</button>
-                                    </div>
+            /* Floating profile card */
+            .user-card {
+                margin-top: auto;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                border-radius: 14px;
+                background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+                border: 1px solid var(--card-border);
+                box-shadow:
+                    0 8px 20px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            }
 
-                                    {{-- Chat Messages List --}}
-                                    <div class="max-h-60 overflow-y-auto space-y-2.5 p-1 pr-1 text-[12px]" :id="'popover-chat-' + ticketId">
-                                        <template x-if="loading">
-                                            <div class="py-8 text-center text-[var(--muted)] text-xs flex items-center justify-center gap-2">
-                                                <svg class="h-4 w-4 animate-spin text-[var(--accent)]" viewBox="0 0 24 24" fill="none">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                                </svg>
-                                                <span>Memuat percakapan...</span>
-                                            </div>
-                                        </template>
-                                        <template x-if="!loading && (!messages || messages.length === 0)">
-                                            <div class="py-8 text-center text-[var(--muted)] text-xs">Belum ada pesan dalam tiket ini.</div>
-                                        </template>
-                                        <template x-for="msg in messages" :key="msg.id">
-                                            <div class="rounded-lg p-2.5 text-[12px]" :class="msg.is_internal ? 'bg-amber-500/15 border border-amber-500/30 text-amber-200' : 'bg-[#1c2633] text-gray-100 border border-[var(--border)]'">
-                                                <div class="flex items-center justify-between text-[10.5px] text-[var(--muted)] mb-1">
-                                                    <span class="font-bold text-[var(--accent)]" x-text="msg.user_name"></span>
-                                                    <span class="font-mono text-[10px]" x-text="msg.created_at"></span>
-                                                </div>
-                                                <p class="whitespace-pre-wrap leading-relaxed" x-text="msg.message"></p>
-                                            </div>
-                                        </template>
-                                    </div>
+            .profile-avatar {
+                width: 38px;
+                height: 38px;
+                border-radius: 12px;
+                display: grid;
+                place-items: center;
+                background: linear-gradient(135deg, #7C5CFF, #5C4FD8);
+                font-size: 0.75rem;
+                font-weight: 700;
+                color: #fff;
+                flex-shrink: 0;
+                position: relative;
+                box-shadow: 0 4px 12px rgba(124, 92, 255, 0.3);
+            }
 
-                                    {{-- Reply Input Bar --}}
-                                    <div class="mt-3 pt-2.5 border-t border-[var(--border)]">
-                                         <div class="flex items-center justify-between mb-2">
-                                             <label :for="'popover_internal_' + ticketId" class="flex items-center gap-1.5 cursor-pointer text-[11px] text-[var(--muted)] hover:text-white transition">
-                                                 <input type="checkbox" :id="'popover_internal_' + ticketId" name="is_internal" x-model="isInternal" class="rounded border-gray-700 bg-gray-900 text-amber-500 focus:ring-0">
-                                                 <span>Catatan Internal</span>
-                                             </label>
-                                         </div>
-                                         <div class="flex gap-2">
-                                             <textarea :id="'popover_reply_' + ticketId"
-                                                       name="message"
-                                                       aria-label="Tulis balasan tiket"
-                                                       x-model="newMessage"
-                                                       rows="2"
-                                                       @keydown="if ($event.key === 'Enter' && !$event.shiftKey) { $event.preventDefault(); if (newMessage.trim() && !sending) sendMessage(); }"
-                                                       placeholder="Tulis balasan... (Enter kirim, Shift+Enter baris baru)"
-                                                       class="flex-1 rounded-lg border border-[var(--border-strong)] bg-[#0c1017] px-3 py-1.5 text-xs text-white placeholder-[var(--muted)] focus:border-[var(--accent)] focus:outline-none resize-none max-h-24"></textarea>
-                                             <button type="button"
-                                                     @click="sendMessage()"
-                                                     :disabled="sending || !newMessage.trim()"
-                                                     class="rounded-lg bg-[var(--accent)] px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-50">
-                                                 <span x-show="!sending">Kirim</span>
-                                                 <span x-show="sending">...</span>
-                                             </button>
-                                         </div>
-                                     </div>             </div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                    @empty
-                    <p class="px-5 py-8 text-center text-[12.5px] text-[var(--muted)]">No recently visited tickets.</p>
-                    @endforelse
-                </div>
-            </div>
-        </div>
-    </div>
-    <x-ticket-modal />
+            .profile-avatar .online-dot {
+                position: absolute;
+                bottom: -2px;
+                right: -2px;
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background: var(--success);
+                border: 2px solid var(--card);
+                box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
+            }
 
-    <script>
-    function quickChatPopover(ticketId, ticketNumber, ticketTitle) {
-        return {
-            open: false,
-            loading: false,
-            ticketId: ticketId,
-            ticketNumber: ticketNumber || '',
-            ticketTitle: ticketTitle || '',
-            messages: [],
-            newMessage: '',
-            isInternal: false,
-            sending: false,
+            .user-meta {
+                display: flex;
+                flex-direction: column;
+                line-height: 1.3;
+                min-width: 0;
+            }
 
-            toggle() {
-                if (!this.open) {
-                    window.dispatchEvent(new CustomEvent('open-quick-chat', { detail: { ticketId: this.ticketId } }));
-                    this.open = true;
-                    this.loadMessages();
-                } else {
-                    this.open = false;
+            .user-meta strong {
+                font-size: 0.84rem;
+                font-weight: 600;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .user-meta span {
+                color: var(--text-3);
+                font-size: 0.72rem;
+            }
+
+            .sidebar-footer {
+                padding: 10px 10px 0;
+                color: var(--text-3);
+                font-size: 0.68rem;
+            }
+
+            /* ===== MAIN PANEL ===== */
+            .main-panel {
+                flex: 1;
+                display: flex;
+                min-width: 0;
+                gap: 16px;
+                height: calc(100vh - 32px);
+                overflow: hidden;
+            }
+
+            /* ===== QUEUE PANEL ===== */
+            .queue-panel {
+                flex: 1.2;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                overflow-y: auto;
+                padding-right: 4px;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+            }
+
+            .queue-panel::-webkit-scrollbar { width: 4px; }
+            .queue-panel::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.08);
+                border-radius: 4px;
+            }
+
+            /* ===== HEADER ===== */
+            .queue-header {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+            }
+
+            .header-left {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                min-width: 0;
+            }
+
+            .mobile-menu-btn {
+                display: none;
+                width: 40px;
+                height: 40px;
+                border-radius: 12px;
+                background: var(--card);
+                border: 1px solid var(--card-border);
+                place-items: center;
+                color: var(--text-2);
+                box-shadow: var(--shadow-card);
+            }
+
+            .header-title h1 {
+                font-size: 1.45rem;
+                font-weight: 800;
+                letter-spacing: -0.03em;
+                line-height: 1.1;
+                background: linear-gradient(180deg, #fff, #B8BECB);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            .header-title p {
+                color: var(--text-3);
+                font-size: 0.78rem;
+                margin-top: 3px;
+            }
+
+            .header-actions {
+                margin-left: auto;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .search-shortcut {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 9px 14px;
+                border-radius: 12px;
+                background: var(--card);
+                border: 1px solid var(--card-border);
+                color: var(--text-3);
+                font-size: 0.78rem;
+                box-shadow: var(--shadow-card);
+                transition: border-color var(--transition), background var(--transition), transform var(--transition);
+            }
+
+            .search-shortcut:hover {
+                border-color: var(--primary-border);
+                background: var(--card-hover);
+                transform: translateY(-1px);
+            }
+
+            .kbd {
+                padding: 2px 6px;
+                border-radius: 5px;
+                background: rgba(255, 255, 255, 0.06);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                font-size: 0.66rem;
+                font-weight: 600;
+                color: var(--text-2);
+            }
+
+            .icon-btn {
+                width: 40px;
+                height: 40px;
+                border-radius: 12px;
+                display: grid;
+                place-items: center;
+                background: var(--card);
+                border: 1px solid var(--card-border);
+                color: var(--text-2);
+                position: relative;
+                box-shadow: var(--shadow-card);
+                transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+            }
+
+            .icon-btn:hover {
+                background: var(--card-hover);
+                color: var(--text);
+                border-color: var(--card-border-hover);
+                transform: translateY(-1px);
+            }
+
+            .icon-btn .notif-dot {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                background: var(--danger);
+                border: 2px solid var(--card);
+                box-shadow: 0 0 8px rgba(255, 93, 115, 0.6);
+            }
+
+            .new-ticket-btn {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                gap: 9px;
+                padding: 11px 22px;
+                border-radius: 14px;
+                background: linear-gradient(135deg, #8B7CFF 0%, #7C5CFF 50%, #6D4FFF 100%);
+                color: #fff;
+                font-weight: 600;
+                font-size: 0.85rem;
+                overflow: hidden;
+                isolation: isolate;
+                box-shadow:
+                    0 4px 14px rgba(124, 92, 255, 0.3),
+                    0 1px 0 rgba(255, 255, 255, 0.15) inset,
+                    0 -1px 0 rgba(0, 0, 0, 0.2) inset;
+                transition: transform var(--transition), box-shadow var(--transition), scale var(--transition);
+            }
+
+            /* Inner top highlight — glossy feel */
+            .new-ticket-btn::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 45%);
+                pointer-events: none;
+                z-index: -1;
+            }
+
+            /* Shine sweep on hover */
+            .new-ticket-btn::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -60%;
+                width: 50%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+                transform: skewX(-20deg);
+                transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+                pointer-events: none;
+                z-index: 1;
+            }
+
+            .new-ticket-btn:hover {
+                transform: translateY(-2px) scale(1.02);
+                box-shadow:
+                    0 8px 24px rgba(124, 92, 255, 0.45),
+                    0 2px 0 rgba(255, 255, 255, 0.2) inset,
+                    0 -1px 0 rgba(0, 0, 0, 0.2) inset;
+            }
+
+            .new-ticket-btn:hover::after {
+                left: 120%;
+            }
+
+            .new-ticket-btn:active {
+                transform: translateY(0) scale(0.97);
+                box-shadow:
+                    0 2px 8px rgba(124, 92, 255, 0.3),
+                    0 1px 0 rgba(255, 255, 255, 0.1) inset;
+            }
+
+            /* Animated plus icon */
+            .new-ticket-btn .btn-icon {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 20px;
+                height: 20px;
+                border-radius: 6px;
+                background: rgba(255, 255, 255, 0.15);
+                transition: transform var(--transition), background var(--transition);
+            }
+
+            .new-ticket-btn:hover .btn-icon {
+                transform: rotate(90deg) scale(1.1);
+                background: rgba(255, 255, 255, 0.25);
+            }
+
+            /* Soft pulsing glow ring */
+            .new-ticket-btn .btn-glow {
+                position: absolute;
+                inset: -2px;
+                border-radius: 16px;
+                background: radial-gradient(circle at 30% 20%, rgba(124, 92, 255, 0.5), transparent 60%);
+                filter: blur(8px);
+                opacity: 0;
+                z-index: -2;
+                transition: opacity var(--transition);
+            }
+
+            .new-ticket-btn:hover .btn-glow {
+                opacity: 1;
+            }
+
+            /* ===== STATS (KPI CARDS) ===== */
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 14px;
+                margin-bottom: 20px;
+            }
+
+            .stat-card {
+                background: linear-gradient(180deg, var(--card) 0%, rgba(26, 31, 45, 0.6) 100%);
+                border: 1px solid var(--card-border);
+                border-radius: var(--radius-lg);
+                padding: 20px;
+                position: relative;
+                overflow: hidden;
+                box-shadow: var(--shadow-card);
+                transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+            }
+
+            .stat-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background: linear-gradient(90deg, transparent, var(--stat-color), transparent);
+                opacity: 0.5;
+            }
+
+            .stat-card::after {
+                content: '';
+                position: absolute;
+                top: -40px;
+                right: -40px;
+                width: 100px;
+                height: 100px;
+                border-radius: 50%;
+                background: radial-gradient(circle, var(--stat-color) 0%, transparent 70%);
+                opacity: 0.06;
+                transition: opacity var(--transition), transform var(--transition);
+            }
+
+            .stat-card:hover {
+                transform: translateY(-6px);
+                border-color: var(--card-border-hover);
+                box-shadow: var(--shadow-hover);
+            }
+
+            .stat-card:hover::after {
+                opacity: 0.12;
+                transform: scale(1.4);
+            }
+
+            .stat-card.open { --stat-color: var(--danger); }
+            .stat-card.progress { --stat-color: var(--warning); }
+            .stat-card.critical { --stat-color: var(--danger); }
+            .stat-card.resolved { --stat-color: var(--success); }
+
+            .stat-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 14px;
+            }
+
+            .stat-label {
+                color: var(--text-3);
+                text-transform: uppercase;
+                font-size: 0.66rem;
+                font-weight: 600;
+                letter-spacing: 0.09em;
+            }
+
+            .stat-icon {
+                width: 34px;
+                height: 34px;
+                border-radius: 10px;
+                display: grid;
+                place-items: center;
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            }
+
+            .stat-card.open .stat-icon { background: var(--danger-soft); color: var(--danger); box-shadow: 0 4px 12px rgba(255, 93, 115, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+            .stat-card.progress .stat-icon { background: var(--warning-soft); color: var(--warning); box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+            .stat-card.critical .stat-icon { background: var(--danger-soft); color: var(--danger); box-shadow: 0 4px 12px rgba(255, 93, 115, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+            .stat-card.resolved .stat-icon { background: var(--success-soft); color: var(--success); box-shadow: 0 4px 12px rgba(52, 211, 153, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+
+            .stat-value {
+                font-size: 2.1rem;
+                font-weight: 800;
+                letter-spacing: -0.04em;
+                line-height: 1;
+                margin-bottom: 10px;
+                background: linear-gradient(180deg, #fff, var(--stat-color));
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            .stat-footer {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+
+            .stat-trend {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 0.68rem;
+                font-weight: 600;
+                padding: 3px 8px;
+                border-radius: 999px;
+            }
+
+            .stat-trend.up { background: var(--success-soft); color: var(--success); }
+            .stat-trend.down { background: var(--danger-soft); color: var(--danger); }
+
+            .stat-sub {
+                color: var(--text-3);
+                font-size: 0.7rem;
+            }
+
+            /* Mini progress bar */
+            .stat-progress {
+                width: 100%;
+                height: 3px;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.05);
+                overflow: hidden;
+                position: relative;
+            }
+
+            .stat-progress-fill {
+                height: 100%;
+                border-radius: 999px;
+                background: linear-gradient(90deg, var(--stat-color), transparent);
+                box-shadow: 0 0 8px var(--stat-color);
+                animation: grow-bar 1.2s var(--spring) both;
+            }
+
+            @keyframes grow-bar {
+                from { width: 0; }
+            }
+
+            /* ===== TOOLBAR ===== */
+            .toolbar-row {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 14px;
+                align-items: center;
+            }
+
+            .search-box {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 0 16px;
+                border: 1px solid var(--card-border);
+                background: linear-gradient(180deg, var(--card), rgba(26, 31, 45, 0.7));
+                border-radius: 14px;
+                min-height: 46px;
+                box-shadow: var(--shadow-card);
+                transition: border-color var(--transition), box-shadow var(--transition);
+            }
+
+            .search-box:focus-within {
+                border-color: var(--primary-border);
+                box-shadow:
+                    0 0 0 4px rgba(124, 92, 255, 0.1),
+                    0 12px 30px rgba(0, 0, 0, 0.35),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            }
+
+            .search-box svg { color: var(--text-3); flex-shrink: 0; }
+
+            .search-box input {
+                flex: 1;
+                background: transparent;
+                border: none;
+                outline: none;
+                color: var(--text);
+                font-size: 0.85rem;
+            }
+
+            .search-box input::placeholder { color: var(--text-3); }
+
+            .search-clear {
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                color: var(--text-3);
+                font-size: 0.7rem;
+                transition: background var(--transition), color var(--transition);
+            }
+
+            .search-clear:hover {
+                background: rgba(255, 255, 255, 0.08);
+                color: var(--text);
+            }
+
+            .filter-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 0 18px;
+                min-height: 46px;
+                border-radius: 14px;
+                background: linear-gradient(180deg, var(--card), rgba(26, 31, 45, 0.7));
+                border: 1px solid var(--card-border);
+                color: var(--text-2);
+                font-weight: 500;
+                font-size: 0.82rem;
+                box-shadow: var(--shadow-card);
+                transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+            }
+
+            .filter-btn:hover {
+                background: var(--card-hover);
+                color: var(--text);
+                border-color: var(--card-border-hover);
+                transform: translateY(-1px);
+            }
+
+            .filter-btn .filter-count {
+                background: var(--primary);
+                color: #fff;
+                border-radius: 999px;
+                padding: 1px 7px;
+                font-size: 0.64rem;
+                font-weight: 700;
+            }
+
+            /* ===== QUICK FILTERS ===== */
+            .quick-filters {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-bottom: 14px;
+            }
+
+            .quick-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 7px 14px;
+                border-radius: 999px;
+                background: var(--card);
+                border: 1px solid var(--card-border);
+                color: var(--text-2);
+                font-size: 0.75rem;
+                font-weight: 500;
+                transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+            }
+
+            .quick-chip:hover {
+                background: var(--card-hover);
+                color: var(--text);
+                transform: translateY(-1px);
+            }
+
+            .quick-chip.active {
+                background: linear-gradient(135deg, rgba(124, 92, 255, 0.2), rgba(124, 92, 255, 0.1));
+                border-color: var(--primary-border);
+                color: #fff;
+                font-weight: 600;
+                box-shadow: 0 4px 16px rgba(124, 92, 255, 0.15);
+            }
+
+            .quick-chip .chip-dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+            }
+
+            .quick-chip .chip-dot.red { background: var(--danger); box-shadow: 0 0 6px rgba(255, 93, 115, 0.6); }
+            .quick-chip .chip-dot.orange { background: var(--warning); box-shadow: 0 0 6px rgba(251, 191, 36, 0.6); }
+            .quick-chip .chip-dot.green { background: var(--success); box-shadow: 0 0 6px rgba(52, 211, 153, 0.6); }
+            .quick-chip .chip-dot.blue { background: var(--blue); box-shadow: 0 0 6px rgba(124, 184, 255, 0.6); }
+
+            /* ===== CHANNEL FILTER ===== */
+            .channel-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-bottom: 18px;
+            }
+
+            .chip-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 14px;
+                border-radius: 999px;
+                background: var(--card);
+                border: 1px solid var(--card-border);
+                color: var(--text-2);
+                font-size: 0.78rem;
+                font-weight: 500;
+                transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+            }
+
+            .chip-chip:hover {
+                background: var(--card-hover);
+                color: var(--text);
+                transform: translateY(-1px);
+            }
+
+            .chip-chip.selected {
+                background: linear-gradient(135deg, rgba(124, 92, 255, 0.18), rgba(124, 92, 255, 0.08));
+                border-color: var(--primary-border);
+                color: #fff;
+                font-weight: 600;
+                box-shadow: 0 4px 16px rgba(124, 92, 255, 0.12);
+            }
+
+            /* ===== RECENTLY VISITED ===== */
+            .recent-panel {
+                margin-bottom: 18px;
+                padding: 14px 16px;
+                background: var(--card);
+                border: 1px solid var(--card-border);
+                border-radius: var(--radius-lg);
+            }
+
+            .recent-panel-title {
+                margin: 0 0 10px;
+                font-size: 12px;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: rgba(255, 255, 255, 0.6);
+            }
+
+            .recent-list {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                margin: 0;
+                padding: 0;
+                list-style: none;
+            }
+
+            .recent-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 8px 10px;
+                border-radius: var(--radius);
+                color: var(--text);
+                text-decoration: none;
+                transition: background var(--transition);
+            }
+
+            .recent-row:hover { background: var(--primary-soft); }
+            .recent-row .recent-number { font-family: ui-monospace, monospace; font-size: 12px; color: var(--blue); }
+            .recent-row .recent-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+            .recent-row .recent-time { font-size: 11px; color: rgba(255, 255, 255, 0.5); white-space: nowrap; }
+
+            /* ===== TICKET LIST ===== */
+            .ticket-list {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .ticket-item {
+                display: grid;
+                grid-template-columns: 44px minmax(0, 1fr) auto;
+                align-items: center;
+                gap: 14px;
+                padding: 16px;
+                background: linear-gradient(180deg, var(--card), rgba(26, 31, 45, 0.7));
+                border: 1px solid var(--card-border);
+                border-radius: var(--radius-lg);
+                position: relative;
+                box-shadow: var(--shadow-card);
+                transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition), background var(--transition);
+                overflow: hidden;
+            }
+
+            .ticket-item::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 18%;
+                bottom: 18%;
+                width: 3px;
+                border-radius: 0 3px 3px 0;
+                background: var(--priority-color, transparent);
+                opacity: 0;
+                transition: opacity var(--transition);
+            }
+
+            .ticket-item::after {
+                content: '';
+                position: absolute;
+                top: -30px;
+                right: -30px;
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                background: radial-gradient(circle, var(--priority-color, var(--primary)) 0%, transparent 70%);
+                opacity: 0;
+                transition: opacity var(--transition);
+            }
+
+            .ticket-item:hover {
+                transform: translateY(-3px) scale(1.01);
+                border-color: var(--card-border-hover);
+                box-shadow: var(--shadow-hover);
+            }
+
+            .ticket-item:hover::before { opacity: 1; }
+            .ticket-item:hover::after { opacity: 0.05; }
+
+            .ticket-item.selected {
+                border-color: var(--primary-border);
+                background: linear-gradient(180deg, #1D2231, rgba(29, 34, 49, 0.7));
+                box-shadow:
+                    0 0 0 1px var(--primary-border),
+                    0 16px 40px rgba(124, 92, 255, 0.15),
+                    0 8px 20px rgba(0, 0, 0, 0.4);
+            }
+
+            .ticket-item.priority-high { --priority-color: var(--danger); }
+            .ticket-item.priority-medium { --priority-color: var(--warning); }
+            .ticket-item.priority-low { --priority-color: var(--blue); }
+
+            .ticket-channel {
+                width: 44px;
+                height: 44px;
+                display: grid;
+                place-items: center;
+                border-radius: 13px;
+                font-size: 0.7rem;
+                font-weight: 700;
+                flex-shrink: 0;
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            }
+
+            .ticket-channel.email { background: var(--blue-soft); color: var(--blue); }
+            .ticket-channel.live-chat { background: var(--cyan-soft); color: var(--cyan); }
+            .ticket-channel.whatsapp { background: var(--success-soft); color: var(--success); }
+            .ticket-channel.web-form { background: var(--primary-soft); color: var(--primary); }
+            .ticket-channel.portal { background: var(--warning-soft); color: var(--warning); }
+
+            .ticket-main { min-width: 0; }
+
+            .ticket-title-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 5px;
+            }
+
+            .ticket-title {
+                font-weight: 600;
+                font-size: 0.9rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                color: var(--text);
+            }
+
+            .unread-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--primary);
+                box-shadow: 0 0 8px rgba(124, 92, 255, 0.7);
+                flex-shrink: 0;
+                animation: pulse 2s ease-in-out infinite;
+            }
+
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+
+            .ticket-subtitle {
+                color: var(--text-3);
+                font-size: 0.76rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .ticket-subtitle .sep { color: var(--text-3); opacity: 0.4; }
+
+            .ticket-subtitle .customer-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+            }
+
+            .ticket-subtitle .customer-chip .mini-avatar {
+                width: 18px;
+                height: 18px;
+                border-radius: 6px;
+                display: grid;
+                place-items: center;
+                background: var(--primary-soft);
+                color: var(--primary);
+                font-size: 0.55rem;
+                font-weight: 700;
+            }
+
+            .ticket-right {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 6px;
+                flex-shrink: 0;
+            }
+
+            .ticket-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 4px 10px;
+                border-radius: 999px;
+                font-size: 0.66rem;
+                font-weight: 600;
+                letter-spacing: 0.02em;
+                text-transform: uppercase;
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            }
+
+            .ticket-badge.open { background: var(--blue-soft); color: var(--blue); }
+            .ticket-badge.checking { background: var(--warning-soft); color: var(--warning); }
+            .ticket-badge.waiting-customer { background: var(--warning-soft); color: var(--warning); }
+            .ticket-badge.solved { background: var(--success-soft); color: var(--success); }
+            .ticket-badge.closed { background: rgba(255, 255, 255, 0.06); color: var(--text-2); }
+            .ticket-badge.escalated { background: var(--danger-soft); color: var(--danger); }
+
+            .ticket-meta {
+                color: var(--text-3);
+                font-size: 0.7rem;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .sla-countdown {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                font-weight: 600;
+            }
+
+            .sla-countdown.breached { color: var(--danger); }
+            .sla-countdown.near { color: var(--warning); }
+            .sla-countdown.ok { color: var(--success); }
+
+            /* ===== EMPTY STATE ===== */
+            .empty-state {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 14px;
+                padding: 60px 24px;
+                text-align: center;
+                background: linear-gradient(180deg, var(--card), rgba(26, 31, 45, 0.6));
+                border: 1px dashed rgba(255, 255, 255, 0.08);
+                border-radius: var(--radius-lg);
+                box-shadow: var(--shadow-card);
+            }
+
+            .empty-icon {
+                width: 68px;
+                height: 68px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: var(--primary-soft);
+                color: var(--primary);
+                box-shadow: 0 8px 24px rgba(124, 92, 255, 0.15);
+            }
+
+            .empty-title { font-size: 1rem; font-weight: 700; }
+            .empty-subtitle { color: var(--text-3); font-size: 0.85rem; max-width: 320px; }
+
+            /* ===== DETAIL PANEL ===== */
+            .detail-panel {
+                width: 38%;
+                min-width: 360px;
+                max-width: 480px;
+                background: linear-gradient(180deg, var(--surface) 0%, rgba(20, 24, 36, 0.8) 100%);
+                border: 1px solid var(--card-border);
+                border-radius: var(--radius-xl);
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                box-shadow: var(--shadow-sidebar);
+            }
+
+            .detail-header {
+                padding: 18px 20px;
+                border-bottom: 1px solid var(--card-border);
+                background: linear-gradient(180deg, rgba(26, 31, 45, 0.6), transparent);
+                position: sticky;
+                top: 0;
+                z-index: 5;
+            }
+
+            .detail-header-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 12px;
+            }
+
+            .detail-title {
+                font-size: 0.95rem;
+                font-weight: 700;
+                color: var(--text);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                background: linear-gradient(180deg, #fff, #B8BECB);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            .detail-actions {
+                display: flex;
+                gap: 6px;
+                flex-shrink: 0;
+            }
+
+            .mini-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 14px;
+                border-radius: 10px;
+                background: var(--card);
+                border: 1px solid var(--card-border);
+                color: var(--text-2);
+                font-size: 0.72rem;
+                font-weight: 600;
+                box-shadow: var(--shadow-card);
+                transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+            }
+
+            .mini-btn:hover {
+                background: var(--card-hover);
+                color: var(--text);
+                border-color: var(--card-border-hover);
+                transform: translateY(-1px);
+            }
+
+            .mini-btn.primary {
+                background: linear-gradient(135deg, rgba(124, 92, 255, 0.2), rgba(124, 92, 255, 0.1));
+                border-color: var(--primary-border);
+                color: #fff;
+            }
+
+            .mini-btn.primary:hover { background: rgba(124, 92, 255, 0.25); }
+
+            .detail-status-row {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 5px 10px;
+                border-radius: 999px;
+                font-size: 0.66rem;
+                font-weight: 600;
+                letter-spacing: 0.02em;
+                text-transform: uppercase;
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            }
+
+            .tag.open { background: var(--blue-soft); color: var(--blue); }
+            .tag.checking { background: var(--warning-soft); color: var(--warning); }
+            .tag.solved { background: var(--success-soft); color: var(--success); }
+            .tag.escalated { background: var(--danger-soft); color: var(--danger); }
+            .tag.closed { background: rgba(255, 255, 255, 0.06); color: var(--text-2); }
+            .tag.priority-high { background: var(--danger-soft); color: var(--danger); }
+            .tag.priority-medium { background: var(--warning-soft); color: var(--warning); }
+            .tag.priority-low { background: var(--blue-soft); color: var(--blue); }
+
+            .detail-body {
+                flex: 1;
+                overflow-y: auto;
+                padding: 18px 20px;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+            }
+
+            .detail-body::-webkit-scrollbar { width: 4px; }
+            .detail-body::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.08);
+                border-radius: 4px;
+            }
+
+            /* ===== CUSTOMER CARD ===== */
+            .customer-card {
+                background: linear-gradient(180deg, var(--card) 0%, rgba(26, 31, 45, 0.6) 100%);
+                border: 1px solid var(--card-border);
+                border-radius: var(--radius-lg);
+                padding: 16px;
+                margin-bottom: 14px;
+                box-shadow: var(--shadow-card);
+            }
+
+            .customer-card-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 14px;
+            }
+
+            .customer-avatar {
+                width: 44px;
+                height: 44px;
+                border-radius: 13px;
+                display: grid;
+                place-items: center;
+                background: linear-gradient(135deg, #8B7CFF, #5C4FD8);
+                color: #fff;
+                font-size: 0.85rem;
+                font-weight: 700;
+                flex-shrink: 0;
+                box-shadow: 0 4px 12px rgba(124, 92, 255, 0.3);
+            }
+
+            .customer-info { min-width: 0; flex: 1; }
+
+            .customer-name {
+                font-weight: 600;
+                font-size: 0.9rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .customer-id { color: var(--text-3); font-size: 0.72rem; }
+
+            .connection-status {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 5px 10px;
+                border-radius: 999px;
+                font-size: 0.68rem;
+                font-weight: 600;
+                flex-shrink: 0;
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            }
+
+            .connection-status.online { background: var(--success-soft); color: var(--success); box-shadow: 0 4px 12px rgba(52, 211, 153, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+            .connection-status.offline { background: var(--danger-soft); color: var(--danger); }
+            .connection-status.degraded { background: var(--warning-soft); color: var(--warning); }
+
+            .customer-details {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .detail-item {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                padding: 9px 10px;
+                background: rgba(255, 255, 255, 0.02);
+                border: 1px solid rgba(255, 255, 255, 0.04);
+                border-radius: 10px;
+                transition: border-color var(--transition), background var(--transition);
+            }
+
+            .detail-item:hover {
+                border-color: rgba(255, 255, 255, 0.08);
+                background: rgba(255, 255, 255, 0.03);
+            }
+
+            .detail-item .label {
+                color: var(--text-3);
+                font-size: 0.62rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                font-weight: 600;
+            }
+
+            .detail-item .value {
+                font-size: 0.78rem;
+                font-weight: 500;
+                color: var(--text);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .detail-item .value.green { color: var(--success); }
+            .detail-item .value.red { color: var(--danger); }
+            .detail-item .value.orange { color: var(--warning); }
+
+            /* ===== GATEWAY ===== */
+            .gateway-box {
+                background: linear-gradient(180deg, var(--card), rgba(26, 31, 45, 0.6));
+                border: 1px solid var(--card-border);
+                border-radius: var(--radius-lg);
+                padding: 16px;
+                margin-bottom: 14px;
+                box-shadow: var(--shadow-card);
+            }
+
+            .gateway-box h3 {
+                font-size: 0.95rem;
+                font-weight: 600;
+                color: var(--text);
+                line-height: 1.4;
+                margin-bottom: 10px;
+            }
+
+            .gateway-meta {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .gateway-meta .meta-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 5px 10px;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                color: var(--text-2);
+                font-size: 0.7rem;
+                font-weight: 500;
+            }
+
+            /* ===== SECTION TITLE ===== */
+            .section-title {
+                font-size: 0.72rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.07em;
+                color: var(--text-3);
+                margin-bottom: 12px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .section-title::after {
+                content: '';
+                flex: 1;
+                height: 1px;
+                background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent);
+            }
+
+            /* ===== TIMELINE ===== */
+            .timeline {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+                margin-bottom: 16px;
+            }
+
+            .timeline-item {
+                display: flex;
+                gap: 12px;
+                padding: 8px 0;
+                position: relative;
+            }
+
+            .timeline-item::before {
+                content: '';
+                position: absolute;
+                left: 5px;
+                top: 28px;
+                bottom: -6px;
+                width: 1px;
+                background: linear-gradient(180deg, rgba(124, 92, 255, 0.3), rgba(255, 255, 255, 0.06));
+            }
+
+            .timeline-item:last-child::before { display: none; }
+
+            .timeline-dot {
+                width: 11px;
+                height: 11px;
+                border-radius: 50%;
+                background: var(--surface);
+                border: 2px solid var(--primary);
+                flex-shrink: 0;
+                margin-top: 5px;
+                z-index: 1;
+                box-shadow: 0 0 8px rgba(124, 92, 255, 0.4);
+            }
+
+            .timeline-dot.green { border-color: var(--success); box-shadow: 0 0 8px rgba(52, 211, 153, 0.4); }
+            .timeline-dot.orange { border-color: var(--warning); box-shadow: 0 0 8px rgba(251, 191, 36, 0.4); }
+            .timeline-dot.red { border-color: var(--danger); box-shadow: 0 0 8px rgba(255, 93, 115, 0.4); }
+
+            .timeline-content { flex: 1; min-width: 0; }
+
+            .timeline-content strong {
+                display: block;
+                font-size: 0.8rem;
+                font-weight: 600;
+                color: var(--text);
+            }
+
+            .timeline-content p {
+                color: var(--text-3);
+                font-size: 0.74rem;
+                margin-top: 2px;
+            }
+
+            .timeline-time {
+                color: var(--text-3);
+                font-size: 0.68rem;
+                white-space: nowrap;
+                flex-shrink: 0;
+                padding-top: 5px;
+            }
+
+            /* ===== CHAT ===== */
+            .chat-section { margin-top: 4px; }
+
+            .chat-topbar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 12px 0;
+                color: var(--text-3);
+                font-size: 0.75rem;
+                border-bottom: 1px solid var(--card-border);
+                margin-bottom: 14px;
+            }
+
+            .chat-topbar .channel-tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--text-2);
+                font-weight: 600;
+                font-size: 0.78rem;
+            }
+
+            .channel-tag.email { color: var(--blue); }
+            .channel-tag.live-chat { color: var(--cyan); }
+            .channel-tag.whatsapp { color: var(--success); }
+            .channel-tag.web-form { color: var(--primary); }
+            .channel-tag.portal { color: var(--warning); }
+
+            .messages {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                padding: 4px 0 12px;
+            }
+
+            .message {
+                display: flex;
+                gap: 10px;
+                align-items: flex-start;
+                animation: msg-in 0.3s var(--spring) both;
+            }
+
+            .message.staff { flex-direction: row-reverse; }
+
+            @keyframes msg-in {
+                from { opacity: 0; transform: translateY(8px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+
+            .message .msg-avatar {
+                width: 30px;
+                height: 30px;
+                border-radius: 10px;
+                display: grid;
+                place-items: center;
+                background: rgba(255, 255, 255, 0.05);
+                color: var(--text-2);
+                font-size: 0.62rem;
+                font-weight: 700;
+                flex-shrink: 0;
+            }
+
+            .message.staff .msg-avatar {
+                background: var(--primary-soft);
+                color: var(--primary);
+            }
+
+            .bubble {
+                max-width: 80%;
+                padding: 10px 14px;
+                border-radius: 16px;
+                font-size: 0.82rem;
+                line-height: 1.5;
+                position: relative;
+            }
+
+            .message.customer .bubble {
+                background: linear-gradient(180deg, var(--surface), rgba(20, 24, 36, 0.8));
+                border: 1px solid var(--card-border);
+                border-top-left-radius: 4px;
+                color: var(--text);
+                box-shadow: var(--shadow-card);
+            }
+
+            .message.staff .bubble {
+                background: linear-gradient(135deg, rgba(124, 92, 255, 0.18), rgba(124, 92, 255, 0.08));
+                border: 1px solid var(--primary-border);
+                border-top-right-radius: 4px;
+                color: #fff;
+                box-shadow: 0 4px 16px rgba(124, 92, 255, 0.1);
+            }
+
+            .message.internal .bubble {
+                background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(251, 191, 36, 0.05));
+                border: 1px solid rgba(251, 191, 36, 0.15);
+                border-top-right-radius: 4px;
+                color: var(--warning);
+                font-style: italic;
+            }
+
+            .bubble strong {
+                display: block;
+                font-size: 0.72rem;
+                font-weight: 600;
+                margin-bottom: 4px;
+                opacity: 0.85;
+            }
+
+            .bubble p { margin: 0; }
+
+            .bubble .msg-meta {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-top: 6px;
+                font-size: 0.64rem;
+                opacity: 0.6;
+            }
+
+            .bubble .msg-meta .delivered { color: var(--success); }
+
+            .typing-indicator {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 12px 16px;
+                background: var(--surface);
+                border: 1px solid var(--card-border);
+                border-radius: 16px;
+                border-top-left-radius: 4px;
+                box-shadow: var(--shadow-card);
+            }
+
+            .typing-indicator span {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--text-3);
+                animation: typing 1.2s infinite;
+            }
+
+            .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+            .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+            @keyframes typing {
+                0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+                30% { transform: translateY(-4px); opacity: 1; }
+            }
+
+            /* ===== REPLY AREA ===== */
+            .composer-wrap {
+                padding: 16px 20px;
+                border-top: 1px solid var(--card-border);
+                background: linear-gradient(0deg, rgba(26, 31, 45, 0.4), transparent);
+            }
+
+            .reply-actions {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+
+            .action-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 14px;
+                border-radius: 10px;
+                background: var(--card);
+                border: 1px solid var(--card-border);
+                color: var(--text-2);
+                font-size: 0.75rem;
+                font-weight: 600;
+                box-shadow: var(--shadow-card);
+                transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+            }
+
+            .action-btn:hover {
+                background: var(--card-hover);
+                color: var(--text);
+                border-color: var(--card-border-hover);
+                transform: translateY(-1px);
+            }
+
+            .action-btn.primary {
+                background: linear-gradient(135deg, rgba(124, 92, 255, 0.2), rgba(124, 92, 255, 0.1));
+                border-color: var(--primary-border);
+                color: #fff;
+            }
+
+            .composer-box {
+                display: flex;
+                align-items: flex-end;
+                gap: 8px;
+                background: linear-gradient(180deg, var(--card), rgba(26, 31, 45, 0.7));
+                border: 1px solid var(--card-border);
+                border-radius: 18px;
+                padding: 12px 14px;
+                box-shadow: var(--shadow-card);
+                transition: border-color var(--transition), box-shadow var(--transition);
+            }
+
+            .composer-box:focus-within {
+                border-color: var(--primary-border);
+                box-shadow:
+                    0 0 0 4px rgba(124, 92, 255, 0.08),
+                    0 12px 30px rgba(0, 0, 0, 0.35);
+            }
+
+            .composer-box textarea {
+                flex: 1;
+                background: transparent;
+                border: none;
+                outline: none;
+                color: var(--text);
+                font-size: 0.82rem;
+                resize: none;
+                min-height: 24px;
+                max-height: 100px;
+                line-height: 1.5;
+            }
+
+            .composer-box textarea::placeholder { color: var(--text-3); }
+
+            .composer-tools {
+                display: flex;
+                align-items: center;
+                gap: 2px;
+                flex-shrink: 0;
+            }
+
+            .composer-tool {
+                width: 32px;
+                height: 32px;
+                border-radius: 10px;
+                display: grid;
+                place-items: center;
+                color: var(--text-3);
+                transition: background var(--transition), color var(--transition), transform var(--transition);
+            }
+
+            .composer-tool:hover {
+                background: rgba(255, 255, 255, 0.06);
+                color: var(--text);
+                transform: scale(1.1);
+            }
+
+            .send-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 9px 18px;
+                border-radius: 12px;
+                background: linear-gradient(135deg, #8B7CFF, #7C5CFF, #6D4FFF);
+                color: #fff;
+                font-weight: 600;
+                font-size: 0.78rem;
+                box-shadow: var(--shadow-btn);
+                transition: transform var(--transition), box-shadow var(--transition);
+            }
+
+            .send-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-btn-hover);
+            }
+
+            .send-btn:active { transform: translateY(0) scale(0.96); }
+
+            .composer-hint {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-top: 8px;
+                color: var(--text-3);
+                font-size: 0.68rem;
+            }
+
+            /* ===== SKELETON ===== */
+            .skeleton-card {
+                background: linear-gradient(180deg, var(--card), rgba(26, 31, 45, 0.6));
+                border: 1px solid var(--card-border);
+                border-radius: var(--radius-lg);
+                padding: 18px;
+                margin-bottom: 10px;
+                box-shadow: var(--shadow-card);
+            }
+
+            .skeleton-line {
+                height: 12px;
+                border-radius: 6px;
+                background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 75%);
+                background-size: 200% 100%;
+                animation: shimmer 1.5s ease-in-out infinite;
+                margin-bottom: 8px;
+            }
+
+            .skeleton-line.short { width: 40%; }
+            .skeleton-line.tiny { width: 25%; height: 8px; }
+
+            @keyframes shimmer {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
+            }
+
+            /* ===== TOAST ===== */
+            .toast-container {
+                position: fixed;
+                top: 24px;
+                right: 24px;
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .toast {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 14px 18px;
+                border-radius: 14px;
+                background: linear-gradient(180deg, var(--card), var(--surface));
+                border: 1px solid var(--card-border);
+                box-shadow: var(--shadow-hover);
+                color: var(--text);
+                font-size: 0.82rem;
+                font-weight: 500;
+                animation: toast-in 0.3s var(--spring);
+            }
+
+            .toast.success { border-left: 3px solid var(--success); box-shadow: 0 12px 30px rgba(52, 211, 153, 0.1); }
+            .toast.error { border-left: 3px solid var(--danger); }
+            .toast.info { border-left: 3px solid var(--primary); }
+
+            @keyframes toast-in {
+                from { opacity: 0; transform: translateX(24px) scale(0.96); }
+                to { opacity: 1; transform: translateX(0) scale(1); }
+            }
+
+            /* ===== DRAWER ===== */
+            .drawer-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 50;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity var(--transition);
+            }
+
+            .drawer-overlay.open {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            /* ===== RESPONSIVE ===== */
+            @media (max-width: 1280px) {
+                .stats-grid {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
                 }
-            },
 
-            loadMessages() {
-                this.loading = true;
-                fetch(`/tickets/${this.ticketId}/quick-details`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(res => res.json())
-                .then(data => {
-                    this.messages = data.messages || [];
-                    this.loading = false;
-                    this.scrollToBottom();
-                })
-                .catch(err => {
-                    console.error('Failed to load messages:', err);
-                    this.loading = false;
+                .detail-panel {
+                    min-width: 320px;
+                }
+            }
+
+            @media (max-width: 1024px) {
+                .dashboard-shell {
+                    padding: 12px;
+                    gap: 12px;
+                }
+
+                .sidebar {
+                    position: fixed;
+                    left: 12px;
+                    top: 12px;
+                    transform: translateX(calc(-100% - 12px));
+                    width: 260px;
+                    min-width: 260px;
+                    z-index: 60;
+                    height: calc(100vh - 24px);
+                }
+
+                .sidebar.open {
+                    transform: translateX(0);
+                }
+
+                .sidebar.collapsed {
+                    width: 260px;
+                    min-width: 260px;
+                }
+
+                .sidebar.collapsed .brand-text,
+                .sidebar.collapsed .brand-subtitle,
+                .sidebar.collapsed .nav-label,
+                .sidebar.collapsed .nav-badge,
+                .sidebar.collapsed .user-meta,
+                .sidebar.collapsed .sidebar-footer-text {
+                    display: block;
+                }
+
+                .sidebar.collapsed .nav-item {
+                    justify-content: flex-start;
+                    padding: 11px 12px;
+                }
+
+                .sidebar.collapsed .user-card {
+                    justify-content: flex-start;
+                    padding: 12px;
+                }
+
+                .mobile-menu-btn {
+                    display: grid;
+                }
+
+                .detail-panel {
+                    position: fixed;
+                    right: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 100%;
+                    max-width: 100%;
+                    min-width: 0;
+                    z-index: 55;
+                    transform: translateX(100%);
+                    transition: transform var(--spring);
+                    border-radius: 24px 0 0 24px;
+                    box-shadow: -20px 0 60px rgba(0, 0, 0, 0.6);
+                }
+
+                .detail-panel.open {
+                    transform: translateX(0);
+                }
+            }
+
+            @media (max-width: 768px) {
+                .dashboard-shell {
+                    padding: 10px;
+                    height: auto;
+                    overflow: visible;
+                }
+
+                .main-panel {
+                    height: auto;
+                    overflow: visible;
+                }
+
+                .queue-panel {
+                    height: auto;
+                    overflow: visible;
+                }
+
+                .stats-grid {
+                    gap: 10px;
+                }
+
+                .header-actions .search-shortcut {
+                    display: none;
+                }
+
+                .header-title h1 { font-size: 1.2rem; }
+
+                .ticket-item {
+                    padding: 14px;
+                    gap: 10px;
+                }
+
+                .detail-panel {
+                    position: fixed;
+                    right: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 100%;
+                    z-index: 55;
+                    transform: translateX(100%);
+                    transition: transform var(--spring);
+                    border-radius: 0;
+                }
+
+                .detail-panel.open {
+                    transform: translateX(0);
+                }
+            }
+
+            @media (max-width: 480px) {
+                .stats-grid {
+                    grid-template-columns: 1fr 1fr;
+                    gap: 8px;
+                }
+
+                .stat-card { padding: 16px; }
+                .stat-value { font-size: 1.7rem; }
+
+                .header-actions { gap: 6px; }
+
+                .new-ticket-btn {
+                    padding: 9px 14px;
+                    font-size: 0.76rem;
+                }
+
+                .toolbar-row {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+
+                .filter-btn {
+                    justify-content: center;
+                }
+
+                .customer-details {
+                    grid-template-columns: 1fr;
+                }
+
+                .ticket-subtitle {
+                    flex-wrap: wrap;
+                }
+            }
+
+            /* ===== REDUCED MOTION ===== */
+            @media (prefers-reduced-motion: reduce) {
+                * {
+                    animation-duration: 0.01ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: 0.01ms !important;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        @include('partials.status-banner')
+        <div class="dashboard-shell">
+            <!-- ===== FLOATING SIDEBAR ===== -->
+            <aside class="sidebar" id="sidebar" aria-label="Sidebar navigation">
+                <div class="brand-wrap">
+                    <div class="brand-icon">◫</div>
+                    <div>
+                        <div class="brand-text">AyyNet</div>
+                        <div class="brand-subtitle">ISP Support Desk</div>
+                    </div>
+                    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+                        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" stroke-linecap="round"/></svg>
+                    </button>
+                </div>
+
+                <nav class="side-nav">
+                    <a href="{{ route('dashboard') }}" class="nav-item active" aria-current="page">
+                        <span class="nav-icon">
+                            <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h4A1.5 1.5 0 0 1 10 4.5v4A1.5 1.5 0 0 1 8.5 10h-4A1.5 1.5 0 0 1 3 8.5v-4Zm0 7A1.5 1.5 0 0 1 4.5 10h4a1.5 1.5 0 0 1 1.5 1.5v4A1.5 1.5 0 0 1 8.5 17h-4A1.5 1.5 0 0 1 3 15.5v-4Zm7-7A1.5 1.5 0 0 1 11.5 3h4A1.5 1.5 0 0 1 17 4.5v4a1.5 1.5 0 0 1-1.5 1.5h-4A1.5 1.5 0 0 1 10 8.5v-4Zm0 7a1.5 1.5 0 0 1 1.5-1.5h4a1.5 1.5 0 0 1 1.5 1.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a1.5 1.5 0 0 1-1.5-1.5v-4Z"/></svg>
+                        </span>
+                        <span class="nav-label">Queue</span>
+                        <span class="nav-badge">{{ $tickets->count() }}</span>
+                    </a>
+                    <a href="{{ route('my.tickets') }}" class="nav-item">
+                        <span class="nav-icon">
+                            <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13Zm-1 3h2v5.2H9V6Zm0 6.1h2v1.5H9v-1.5Z"/></svg>
+                        </span>
+                        <span class="nav-label">My Tickets</span>
+                        <span class="nav-badge muted">{{ $tickets->where('created_by', auth()->id() ?? 1)->count() }}</span>
+                    </a>
+                    <a href="{{ route('tickets.index') }}" class="nav-item">
+                        <span class="nav-icon">
+                            <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h11A1.5 1.5 0 0 1 17 4.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 15.5v-11Zm1.5.5v10h11V5h-11Zm2 2h7v1h-7V7Zm0 3h7v1h-7v-1Zm0 3h4v1h-4v-1Z"/></svg>
+                        </span>
+                        <span class="nav-label">All Tickets</span>
+                        <span class="nav-badge muted">{{ $tickets->count() }}</span>
+                    </a>
+                    <a href="{{ route('reports.index') }}" class="nav-item">
+                        <span class="nav-icon">
+                            <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 3v14h14v-1.5H4.5V3H3Zm3 3h2v8H6V6Zm4 0h2v5h-2V6Zm4 0h2v3h-2V6Z"/></svg>
+                        </span>
+                        <span class="nav-label">Reports</span>
+                    </a>
+                    <a href="{{ route('settings.index') }}" class="nav-item">
+                        <span class="nav-icon">
+                            <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 2.5a7.5 7.5 0 0 1 7.5 7.5 7.5 7.5 0 0 1-7.5 7.5A7.5 7.5 0 0 1 2.5 10 7.5 7.5 0 0 1 10 2.5Zm0 1.5a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 1.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"/></svg>
+                        </span>
+                        <span class="nav-label">Settings</span>
+                    </a>
+                    @if(auth()->user()->hasRole('admin', 'cs'))
+                        <a href="{{ route('status-banners.index') }}" class="nav-item">
+                            <span class="nav-icon">
+                                <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8v4h3l5 4V4L6 8H3Zm11 -1a4 4 0 0 1 0 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            <span class="nav-label">Status Banner</span>
+                        </a>
+                    @endif
+                </nav>
+
+                <!-- Floating profile card -->
+                <div class="user-card">
+                    <div class="profile-avatar">
+                        {{ strtoupper(substr(auth()->user()->name ?? 'PS', 0, 2)) }}
+                        <span class="online-dot"></span>
+                    </div>
+                    <div class="user-meta">
+                        <strong>{{ auth()->user()->name ?? 'Priya Sharma' }}</strong>
+                        <span>Admin · Online</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-footer">
+                    <span class="sidebar-footer-text">AyyNet v2.1 · Enterprise</span>
+                </div>
+            </aside>
+
+            <!-- Mobile drawer overlay -->
+            <div class="drawer-overlay" id="drawer-overlay" onclick="closeSidebar()" aria-hidden="true"></div>
+
+            <!-- ===== MAIN PANEL ===== -->
+            <main class="main-panel">
+                <!-- ===== QUEUE PANEL ===== -->
+                <section class="queue-panel" aria-label="Ticket queue">
+                    <!-- Header -->
+                    <div class="queue-header">
+                        <div class="header-left">
+                            <button class="mobile-menu-btn" onclick="openSidebar()" aria-label="Open menu">
+                                <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" stroke-linecap="round"/></svg>
+                            </button>
+                            <div class="header-title">
+                                <h1>Ticket Queue</h1>
+                                <p>{{ now()->translatedFormat('l, j F Y') }} · {{ now()->format('H:i') }} WIB</p>
+                            </div>
+                        </div>
+                        <div class="header-actions">
+                            <button class="search-shortcut" onclick="focusSearch()" aria-label="Search tickets">
+                                <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8.5 3a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm0 1.5a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm6.1 8.4 3.5 3.5-1.1 1.1-3.5-3.5 1.1-1.1Z"/></svg>
+                                Search
+                                <span class="kbd">Ctrl K</span>
+                            </button>
+                            <x-notification-bell />
+                            <a href="{{ route('tickets.create') }}" class="new-ticket-btn">
+                                <span class="btn-glow" aria-hidden="true"></span>
+                                <span class="btn-icon">
+                                    <svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke-linecap="round"/></svg>
+                                </span>
+                                New Ticket
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- KPI Statistics -->
+                    <div class="stats-grid">
+                        <div class="stat-card open">
+                            <div class="stat-header">
+                                <span class="stat-label">Open</span>
+                                <span class="stat-icon">
+                                    <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13Zm-1 3h2v5.2H9V6Zm0 6.1h2v1.5H9v-1.5Z"/></svg>
+                                </span>
+                            </div>
+                            <div class="stat-value" data-counter="{{ $summary['open'] }}">0</div>
+                            <div class="stat-footer">
+                                <span class="stat-trend up">↑ 12%</span>
+                                <span class="stat-sub">needs attention</span>
+                            </div>
+                            <div class="stat-progress">
+                                <div class="stat-progress-fill" style="width: 68%;"></div>
+                            </div>
+                        </div>
+                        <div class="stat-card progress">
+                            <div class="stat-header">
+                                <span class="stat-label">In Progress</span>
+                                <span class="stat-icon">
+                                    <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13Zm-1 3h2v5.2H9V6Zm0 6.1h2v1.5H9v-1.5Z"/></svg>
+                                </span>
+                            </div>
+                            <div class="stat-value" data-counter="{{ $summary['in_progress'] }}">0</div>
+                            <div class="stat-footer">
+                                <span class="stat-trend up">↑ 8%</span>
+                                <span class="stat-sub">being handled</span>
+                            </div>
+                            <div class="stat-progress">
+                                <div class="stat-progress-fill" style="width: 52%;"></div>
+                            </div>
+                        </div>
+                        <div class="stat-card critical">
+                            <div class="stat-header">
+                                <span class="stat-label">Critical</span>
+                                <span class="stat-icon">
+                                    <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13Zm-1 3h2v5.2H9V6Zm0 6.1h2v1.5H9v-1.5Z"/></svg>
+                                </span>
+                            </div>
+                            <div class="stat-value" data-counter="{{ $summary['critical'] }}">0</div>
+                            <div class="stat-footer">
+                                <span class="stat-trend down">↓ 3%</span>
+                                <span class="stat-sub"><2h remaining</span>
+                            </div>
+                            <div class="stat-progress">
+                                <div class="stat-progress-fill" style="width: 35%;"></div>
+                            </div>
+                        </div>
+                        <div class="stat-card resolved">
+                            <div class="stat-header">
+                                <span class="stat-label">Resolved</span>
+                                <span class="stat-icon">
+                                    <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13Zm-1.2 8.6-2.3-2.3-1.1 1.1 3.4 3.4 5.5-5.5-1.1-1.1-4.4 4.4Z"/></svg>
+                                </span>
+                            </div>
+                            <div class="stat-value" data-counter="{{ $summary['resolved'] }}">0</div>
+                            <div class="stat-footer">
+                                <span class="stat-trend up">↑ 15%</span>
+                                <span class="stat-sub">total resolved</span>
+                            </div>
+                            <div class="stat-progress">
+                                <div class="stat-progress-fill" style="width: 85%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recently Visited: the 5 tickets opened most recently (falls back to newest) -->
+                    @if($recentTickets->isNotEmpty())
+                        <section class="recent-panel" aria-labelledby="recent-panel-title">
+                            <h2 class="recent-panel-title" id="recent-panel-title">Terakhir Dilihat</h2>
+                            <ul class="recent-list">
+                                @foreach($recentTickets as $recent)
+                                    <li>
+                                        <a href="{{ route('tickets.show', $recent->id) }}" class="recent-row" data-recent-ticket="{{ $recent->id }}">
+                                            <span class="recent-number">{{ $recent->ticket_number }}</span>
+                                            <span class="recent-title">{{ $recent->title }} · {{ $recent->customer->name ?? '—' }}</span>
+                                            <span class="recent-time">{{ ($recent->last_visited_at ?? $recent->created_at)?->diffForHumans() }}</span>
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </section>
+                    @endif
+
+                    <!-- Search & Filter -->
+                    <div class="toolbar-row">
+                        <div class="search-box" id="search-box">
+                            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8.5 3a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm0 1.5a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm6.1 8.4 3.5 3.5-1.1 1.1-3.5-3.5 1.1-1.1Z"/></svg>
+                            <input type="text" id="search-input" placeholder="Cari ticket, pelanggan, ID..." aria-label="Search tickets" />
+                            <button class="search-clear" onclick="clearSearch()" aria-label="Clear search" style="display:none;">✕</button>
+                        </div>
+                        <button class="filter-btn" onclick="toggleFilters()" aria-label="Toggle filters">
+                            <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 5h14M6 10h8M9 15h2" stroke-linecap="round"/></svg>
+                            Filter
+                            <span class="filter-count" id="filter-count" style="display:none;">0</span>
+                        </button>
+                    </div>
+
+                    <!-- Quick Filters -->
+                    <div class="quick-filters" id="quick-filters" style="display:none;">
+                        <button class="quick-chip active" data-filter="all"><span class="chip-dot blue"></span> All</button>
+                        <button class="quick-chip" data-filter="open"><span class="chip-dot red"></span> Open</button>
+                        <button class="quick-chip" data-filter="pending"><span class="chip-dot orange"></span> Pending</button>
+                        <button class="quick-chip" data-filter="resolved"><span class="chip-dot green"></span> Resolved</button>
+                        <button class="quick-chip" data-filter="critical"><span class="chip-dot red"></span> Critical</button>
+                        <button class="quick-chip" data-filter="today"><span class="chip-dot blue"></span> Today</button>
+                        <button class="quick-chip" data-filter="high"><span class="chip-dot orange"></span> High Priority</button>
+                    </div>
+
+                    <!-- Channel Filter -->
+                    <div class="channel-row">
+                        @foreach ($channelOptions as $option)
+                            <a href="{{ $option['key'] === 'All' ? route('dashboard') : route('dashboard', ['channel' => $option['key']]) }}"
+                               class="chip-chip {{ $selectedChannel === $option['key'] ? 'selected' : '' }}">
+                                {!! $option['icon'] !!}
+                                {{ $option['label'] }}
+                            </a>
+                        @endforeach
+                    </div>
+
+                    <!-- Ticket List -->
+                    <div class="ticket-list" id="ticket-list">
+                        @forelse($tickets as $ticket)
+                            @php
+                                $ticketChannel = $channelMeta($ticket);
+                                $priorityClass = strtolower($ticket->priority ?? 'medium');
+                                $slaClass = 'ok';
+                                $slaText = 'SLA OK';
+                                if ($ticket->sla_deadline) {
+                                    if ($ticket->sla_deadline->isPast()) {
+                                        $slaClass = 'breached';
+                                        $slaText = 'SLA Breached';
+                                    } elseif ($ticket->sla_deadline->diffInHours(now()) < 2) {
+                                        $slaClass = 'near';
+                                        $slaText = 'SLA ' . $ticket->sla_deadline->diffForHumans();
+                                    } else {
+                                        $slaText = 'SLA ' . $ticket->sla_deadline->diffForHumans();
+                                    }
+                                }
+                            @endphp
+                            <a href="{{ route('tickets.show', $ticket->id) }}" class="ticket-item priority-{{ $priorityClass }}" data-status="{{ strtolower($ticket->status) }}" data-priority="{{ strtolower($ticket->priority ?? 'medium') }}" data-created="{{ $ticket->created_at?->format('Y-m-d') }}">
+                                <div class="ticket-channel {{ $ticketChannel['class'] }}">
+                                    {!! $ticketChannel['icon'] !!}
+                                </div>
+                                <div class="ticket-main">
+                                    <div class="ticket-title-row">
+                                        <span class="ticket-title">{{ \Illuminate\Support\Str::limit($ticket->title, 40) }}</span>
+                                        @if($ticket->messages->isNotEmpty())
+                                            <span class="unread-dot" aria-label="Unread messages"></span>
+                                        @endif
+                                    </div>
+                                    <div class="ticket-subtitle">
+                                        <span class="customer-chip">
+                                            <span class="mini-avatar">{{ strtoupper(substr($ticket->customer->name ?? 'U', 0, 2)) }}</span>
+                                            {{ $ticket->customer->name ?? 'Unknown' }}
+                                        </span>
+                                        <span class="sep">·</span>
+                                        <span>{{ $ticket->customer->package ?? ($ticket->customer->phone ?? '—') }}</span>
+                                        <span class="sep">·</span>
+                                        <span>{{ $ticket->ticket_number ?? 'TKT-' . str_pad((string) $ticket->id, 4, '0', STR_PAD_LEFT) }}</span>
+                                    </div>
+                                </div>
+                                <div class="ticket-right">
+                                    <span class="ticket-badge {{ strtolower(str_replace(' ', '-', $ticket->status)) }}">
+                                        {{ $ticket->status }}
+                                    </span>
+                                    <div class="ticket-meta">
+                                        <span>{{ $ticket->created_at->diffForHumans() }}</span>
+                                        @if($ticket->sla_deadline)
+                                            <span class="sla-countdown {{ $slaClass }}">{{ $slaText }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </a>
+                        @empty
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <svg viewBox="0 0 20 20" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h11A1.5 1.5 0 0 1 17 4.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 15.5v-11Zm1.5.5v10h11V5h-11Zm2 2h7v1h-7V7Zm0 3h7v1h-7v-1Zm0 3h4v1h-4v-1Z"/></svg>
+                                </div>
+                                <div class="empty-title">Belum ada ticket</div>
+                                <div class="empty-subtitle">Buat tiket baru untuk mulai menerima request pelanggan.</div>
+                                <a href="{{ route('tickets.create') }}" class="new-ticket-btn" style="margin-top: 8px;">+ New Ticket</a>
+                            </div>
+                        @endforelse
+                    </div>
+
+                    <!-- Skeleton loading -->
+                    <div id="skeleton-loading" style="display:none;">
+                        @for($i = 0; $i < 4; $i++)
+                            <div class="skeleton-card">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line"></div>
+                                <div class="skeleton-line tiny"></div>
+                            </div>
+                        @endfor
+                    </div>
+                </section>
+
+                <!-- ===== DETAIL PANEL ===== -->
+                <aside class="detail-panel" id="detail-panel" aria-label="Ticket detail">
+                    <div class="detail-header">
+                        <div class="detail-header-row">
+                            <div class="detail-title">{{ $selected?->ticket_number ?? 'TKT-0000' }}</div>
+                            <div class="detail-actions">
+                                <button class="mini-btn primary" onclick="openDetail()" aria-label="Open full detail">
+                                    <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h11A1.5 1.5 0 0 1 17 4.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 15.5v-11Zm1.5.5v10h11V5h-11Zm2 2h7v1h-7V7Zm0 3h7v1h-7v-1Zm0 3h4v1h-4v-1Z"/></svg>
+                                    Detail
+                                </button>
+                                <button class="mini-btn" onclick="closeDetail()" aria-label="Close detail" style="display:none;" id="detail-close-btn">
+                                    <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke-linecap="round"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="detail-status-row">
+                            <span class="tag {{ strtolower($selected?->status ?? 'open') }}">{{ $selected?->status ?? 'Open' }}</span>
+                            <span class="tag priority-{{ strtolower($selected?->priority ?? 'medium') }}">{{ $selected?->priority ?? 'Medium' }}</span>
+                            <span class="tag {{ $detailChannel['class'] }}">{!! $detailChannel['icon'] !!} {{ $detailChannel['label'] }}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-body">
+                        <!-- Customer Internet Card -->
+                        <div class="customer-card">
+                            <div class="customer-card-header">
+                                <div class="customer-avatar">{{ strtoupper(substr($selected?->customer->name ?? 'MO', 0, 2)) }}</div>
+                                <div class="customer-info">
+                                    <div class="customer-name">{{ $selected?->customer->name ?? 'Mara Okonkwo' }}</div>
+                                    <div class="customer-id">CUST-{{ $selected?->customer->customer_id ?? '0001' }}</div>
+                                </div>
+                                <span class="connection-status online">
+                                    <span class="status-dot"></span> Online
+                                </span>
+                            </div>
+                            <div class="customer-details">
+                                <div class="detail-item">
+                                    <span class="label">Service ID</span>
+                                    <span class="value">SV-{{ $selected?->customer->id ?? '0001' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Package Speed</span>
+                                    <span class="value">{{ $selected?->customer->package ?? '30 Mbps' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Current Bandwidth</span>
+                                    <span class="value green">28.4 Mbps ↓</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Router Status</span>
+                                    <span class="value green">Online</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">OLT</span>
+                                    <span class="value">OLT-01 / PON 2</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">ONU Serial</span>
+                                    <span class="value">HWTC-8F2A1B</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Signal RX</span>
+                                    <span class="value green">-18.5 dBm</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Signal TX</span>
+                                    <span class="value green">2.1 dBm</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Network Area</span>
+                                    <span class="value">Area 3 · POP 2</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Technician</span>
+                                    <span class="value">Andi S.</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Installation</span>
+                                    <span class="value">12 Mar 2024</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Last Outage</span>
+                                    <span class="value orange">2 hari lalu</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ticket Summary -->
+                        <div class="gateway-box">
+                            <h3>{{ $selected?->title ?? 'Payment gateway returning 500 errors on checkout' }}</h3>
+                            <div class="gateway-meta">
+                                <span class="meta-chip">{{ $selected?->created_at?->format('d M Y, H:i') ?? now()->format('d M Y, H:i') }}</span>
+                                <span class="meta-chip">Priority SLA: 5h</span>
+                                <span class="meta-chip">Escalation: L2</span>
+                            </div>
+                        </div>
+
+                        <!-- Timeline -->
+                        <div class="section-title">Activity Timeline</div>
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-dot green"></div>
+                                <div class="timeline-content">
+                                    <strong>Status changed to Checking</strong>
+                                    <p>Andi S. mulai menangani tiket</p>
+                                </div>
+                                <span class="timeline-time">10:24</span>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot orange"></div>
+                                <div class="timeline-content">
+                                    <strong>Escalated to L2</strong>
+                                    <p>Diteruskan ke tim jaringan</p>
+                                </div>
+                                <span class="timeline-time">09:45</span>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <strong>Ticket created</strong>
+                                    <p>Dibuat oleh customer via WhatsApp</p>
+                                </div>
+                                <span class="timeline-time">09:12</span>
+                            </div>
+                        </div>
+
+                        <!-- Chat -->
+                        <div class="chat-section">
+                            <div class="chat-topbar">
+                                <span class="channel-tag {{ $detailChannel['class'] }}">
+                                    {!! $detailChannel['icon'] !!}
+                                    Masuk melalui {{ $detailChannel['label'] }}
+                                </span>
+                                <span>{{ $selected?->created_at?->format('H:i') ?? '09:12' }}</span>
+                            </div>
+
+                            <div class="messages">
+                                <div class="message customer">
+                                    <div class="msg-avatar">MO</div>
+                                    <div class="bubble">
+                                        <strong>{{ $selected?->customer->name ?? 'Mara Okonkwo' }}</strong>
+                                        <p>
+                                            {{ $selected?->description ?? 'We started seeing 500 errors from the Stripe integration around 9 AM. All checkout flows are broken — approximately 40% of transactions failing.' }}
+                                        </p>
+                                        <div class="msg-meta">
+                                            <span>09:12</span>
+                                            <span class="delivered">✓✓</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="message staff">
+                                    <div class="msg-avatar">AS</div>
+                                    <div class="bubble">
+                                        <strong>Andi S. · Staff</strong>
+                                        <p>Baik, saya cek dulu status ONU dan signal level-nya. Mohon tunggu sebentar.</p>
+                                        <div class="msg-meta">
+                                            <span>09:20</span>
+                                            <span class="delivered">✓✓</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="message internal">
+                                    <div class="msg-avatar">AS</div>
+                                    <div class="bubble">
+                                        <strong>Internal Note</strong>
+                                        <p>Signal RX -18.5 dBm normal. Kemungkinan masalah di sisi router customer. Perlu remote check.</p>
+                                        <div class="msg-meta">
+                                            <span>09:35</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="message customer">
+                                    <div class="msg-avatar">MO</div>
+                                    <div class="bubble">
+                                        <strong>{{ $selected?->customer->name ?? 'Mara Okonkwo' }}</strong>
+                                        <p>Sudah dicoba restart router tapi masih error. Mohon bantuannya.</p>
+                                        <div class="msg-meta">
+                                            <span>09:40</span>
+                                            <span class="delivered">✓✓</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="typing-indicator" aria-label="Staff is typing">
+                                    <span></span><span></span><span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reply Area -->
+                    <div class="composer-wrap">
+                        <div class="reply-actions">
+                            <button class="action-btn primary">
+                                <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 10l14-7-4 14-3-5-7-2Z" stroke-linejoin="round"/></svg>
+                                Reply
+                            </button>
+                            <button class="action-btn">
+                                <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 3h12v14H4V3Zm2 2v10h8V5H6Zm2 2h4v1H8V7Zm0 3h4v1H8v-1Zm0 3h2v1H8v-1Z"/></svg>
+                                Internal Note
+                            </button>
+                        </div>
+                        <div class="composer-box">
+                            <textarea id="reply-input" placeholder="Tulis balasan..." rows="1" aria-label="Reply message"></textarea>
+                            <div class="composer-tools">
+                                <button class="composer-tool" aria-label="Add emoji">
+                                    <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13ZM7 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm6 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm-6.5 2.5a4.5 4.5 0 0 0 7 0l-1.2-.8a3 3 0 0 1-4.6 0l-1.2.8Z"/></svg>
+                                </button>
+                                <button class="composer-tool" aria-label="Attach file">
+                                    <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13Zm-1 3h2v5.2H9V6Zm0 6.1h2v1.5H9v-1.5Z"/></svg>
+                                </button>
+                                <button class="composer-tool" aria-label="Quick reply">
+                                    <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h11A1.5 1.5 0 0 1 17 4.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 15.5v-11Zm1.5.5v10h11V5h-11Zm2 2h7v1h-7V7Zm0 3h7v1h-7v-1Zm0 3h4v1h-4v-1Z"/></svg>
+                                </button>
+                            </div>
+                            <button class="send-btn" onclick="sendReply()" aria-label="Send reply">
+                                <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 10l14-7-4 14-3-5-7-2Z" stroke-linejoin="round"/></svg>
+                                Send
+                            </button>
+                        </div>
+                        <div class="composer-hint">
+                            <span class="kbd">Enter</span> to send · <span class="kbd">Shift+Enter</span> for new line
+                        </div>
+                    </div>
+                </aside>
+            </main>
+        </div>
+
+        <!-- Toast container -->
+        <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+        <script>
+            // ===== SIDEBAR =====
+            function toggleSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('collapsed');
+            }
+
+            function openSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('drawer-overlay');
+                sidebar.classList.add('open');
+                overlay.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('drawer-overlay');
+                sidebar.classList.remove('open');
+                overlay.classList.remove('open');
+                document.body.style.overflow = '';
+            }
+
+            // ===== DETAIL PANEL (mobile) =====
+            function openDetail() {
+                const panel = document.getElementById('detail-panel');
+                panel.classList.add('open');
+                document.getElementById('detail-close-btn').style.display = 'inline-flex';
+            }
+
+            function closeDetail() {
+                const panel = document.getElementById('detail-panel');
+                panel.classList.remove('open');
+                document.getElementById('detail-close-btn').style.display = 'none';
+            }
+
+            // ===== SEARCH =====
+            function focusSearch() {
+                document.getElementById('search-input').focus();
+            }
+
+            function clearSearch() {
+                const input = document.getElementById('search-input');
+                input.value = '';
+                input.focus();
+                document.querySelector('.search-clear').style.display = 'none';
+                filterTickets();
+            }
+
+            document.getElementById('search-input')?.addEventListener('input', function () {
+                document.querySelector('.search-clear').style.display = this.value ? 'grid' : 'none';
+                filterTickets();
+            });
+
+            // ===== FILTERS =====
+            function toggleFilters() {
+                const filters = document.getElementById('quick-filters');
+                filters.style.display = filters.style.display === 'none' ? 'flex' : 'none';
+            }
+
+            document.querySelectorAll('.quick-chip').forEach(chip => {
+                chip.addEventListener('click', function () {
+                    document.querySelectorAll('.quick-chip').forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    filterTickets();
                 });
-            },
+            });
 
-            sendMessage() {
-                if (!this.newMessage.trim() || this.sending) return;
+            function filterTickets() {
+                const search = (document.getElementById('search-input')?.value || '').toLowerCase();
+                const activeFilter = document.querySelector('.quick-chip.active')?.dataset.filter || 'all';
+                const tickets = document.querySelectorAll('.ticket-item');
+                let count = 0;
 
-                this.sending = true;
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                tickets.forEach(ticket => {
+                    const text = ticket.textContent.toLowerCase();
+                    const status = ticket.dataset.status;
+                    const priority = ticket.dataset.priority;
+                    const created = ticket.dataset.created;
+                    const today = new Date().toISOString().split('T')[0];
 
-                fetch(`/tickets/${this.ticketId}/quick-message`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        message: this.newMessage,
-                        is_internal: this.isInternal ? 1 : 0
-                    })
-                })
-                .then(res => res.json())
-                .then(res => {
-                    if (res.success && res.message) {
-                        this.messages.push(res.message);
-                        this.newMessage = '';
-                        this.scrollToBottom();
+                    let show = true;
+
+                    if (search && !text.includes(search)) show = false;
+
+                    if (show && activeFilter !== 'all') {
+                        switch (activeFilter) {
+                            case 'open': show = status === 'open'; break;
+                            case 'pending': show = ['checking', 'waiting-customer'].includes(status); break;
+                            case 'resolved': show = status === 'solved'; break;
+                            case 'critical': show = priority === 'high'; break;
+                            case 'today': show = created === today; break;
+                            case 'high': show = priority === 'high'; break;
+                        }
                     }
-                    this.sending = false;
-                })
-                .catch(err => {
-                    console.error('Failed to send message:', err);
-                    this.sending = false;
-                });
-            },
 
-            scrollToBottom() {
-                this.$nextTick(() => {
-                    const el = document.getElementById(`popover-chat-${this.ticketId}`);
-                    if (el) el.scrollTop = el.scrollHeight;
+                    ticket.style.display = show ? '' : 'none';
+                    if (show) count++;
+                });
+
+                const emptyState = document.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.style.display = count === 0 ? 'flex' : 'none';
+                }
+            }
+
+            // ===== ANIMATED COUNTERS =====
+            function animateCounters() {
+                document.querySelectorAll('[data-counter]').forEach(el => {
+                    const target = parseInt(el.dataset.counter, 10) || 0;
+                    const duration = 800;
+                    const start = performance.now();
+
+                    function tick(now) {
+                        const progress = Math.min((now - start) / duration, 1);
+                        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+                        el.textContent = Math.round(target * eased);
+                        if (progress < 1) {
+                            requestAnimationFrame(tick);
+                        }
+                    }
+
+                    requestAnimationFrame(tick);
                 });
             }
-        };
-    }
-    </script>
-</x-app-layout>
+
+            // ===== KEYBOARD SHORTCUTS =====
+            document.addEventListener('keydown', function (e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    focusSearch();
+                }
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                    closeDetail();
+                }
+            });
+
+            // ===== AUTO-RESIZE TEXTAREA =====
+            const replyInput = document.getElementById('reply-input');
+            if (replyInput) {
+                replyInput.addEventListener('input', function () {
+                    this.style.height = 'auto';
+                    this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+                });
+            }
+
+            // ===== SEND REPLY =====
+            function sendReply() {
+                const input = document.getElementById('reply-input');
+                const text = input.value.trim();
+                if (!text) return;
+
+                showToast('Pesan terkirim', 'success');
+                input.value = '';
+                input.style.height = 'auto';
+
+                const typing = document.querySelector('.typing-indicator');
+                if (typing) typing.remove();
+            }
+
+            // ===== TOAST =====
+            function showToast(message, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                container.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(24px) scale(0.96)';
+                    toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            // ===== SKELETON LOADING =====
+            window.addEventListener('DOMContentLoaded', function () {
+                const skeleton = document.getElementById('skeleton-loading');
+                const ticketList = document.getElementById('ticket-list');
+
+                if (ticketList && ticketList.children.length === 0) {
+                    skeleton.style.display = 'block';
+                    setTimeout(() => {
+                        skeleton.style.display = 'none';
+                    }, 800);
+                }
+
+                animateCounters();
+            });
+
+            // ===== LIVE CLOCK =====
+            function updateClock() {
+                const now = new Date();
+                const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const date = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                const el = document.querySelector('.header-title p');
+                if (el) {
+                    el.textContent = `${date} · ${time} WIB`;
+                }
+            }
+            setInterval(updateClock, 30000);
+        </script>
+    </body>
+</html>

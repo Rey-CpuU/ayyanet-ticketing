@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class TransferSqliteToPostgres extends Command
 {
@@ -30,26 +31,42 @@ class TransferSqliteToPostgres extends Command
 
         config([
             'database.connections.legacy' => [
-                'driver'   => 'sqlite',
+                'driver' => 'sqlite',
                 'database' => $source,
             ],
         ]);
 
+        // Parents before children (foreign keys). The legacy ticket_progress table is no longer
+        // part of the schema; ticket_activities holds the ticket history.
         $tables = [
             'users',
             'customers',
             'tickets',
-            'ticket_progress',
             'ticket_messages',
             'status_banners',
             'ticket_activities',
+            'ticket_audit_logs',
+            'invitations',
+            'notifications',
         ];
 
         foreach ($tables as $table) {
-            DB::connection()->transaction(function () use ($table) {
+            if (! Schema::connection('legacy')->hasTable($table) || ! Schema::hasTable($table)) {
+                $this->warn("{$table}: skipped (table missing in source or target)");
+
+                continue;
+            }
+
+            // Only copy columns the target schema still has (e.g. tickets.impact was removed).
+            $columns = array_values(array_intersect(
+                Schema::connection('legacy')->getColumnListing($table),
+                Schema::getColumnListing($table),
+            ));
+
+            DB::connection()->transaction(function () use ($table, $columns) {
                 $rows = DB::connection('legacy')
                     ->table($table)
-                    ->get()
+                    ->get($columns)
                     ->map(fn ($row) => (array) $row)
                     ->all();
 
@@ -61,7 +78,9 @@ class TransferSqliteToPostgres extends Command
                     return;
                 }
 
-                DB::table($table)->insertOrIgnore($rows);
+                foreach (array_chunk($rows, 500) as $chunk) {
+                    DB::table($table)->insertOrIgnore($chunk);
+                }
 
                 $sequence = DB::selectOne("SELECT pg_get_serial_sequence('\"{$table}\"', 'id') AS seq");
 

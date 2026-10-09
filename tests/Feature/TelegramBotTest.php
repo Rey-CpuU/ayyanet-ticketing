@@ -2,10 +2,12 @@
 
 use App\Models\Customer;
 use App\Models\Ticket;
+use App\Models\TicketActivity;
 use App\Models\User;
 use App\Services\TelegramConversationManager;
-use App\Services\TelegramService;
+use App\Services\TicketWorkflow;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
@@ -33,7 +35,7 @@ test('telegram webhook endpoint responds with ok', function () {
 test('telegram staff can login and use /clean command', function () {
     $user = User::factory()->create([
         'email' => 'admin@ayyanet.test',
-        'password' => \Illuminate\Support\Facades\Hash::make('secret123'),
+        'password' => Hash::make('secret123'),
         'role' => 'admin',
     ]);
 
@@ -156,7 +158,8 @@ test('telegram user can go through add customer wizard step-by-step', function (
     expect($customer)->not->toBeNull();
     expect($customer->name)->toBe('Budi Santoso');
     expect($customer->package)->toBe('Home 20Mbps');
-    expect($customer->customer_id)->toStartWith('CUS-');
+    // Same customer numbering as the web form.
+    expect($customer->customer_id)->toBe(Customer::numberFor($customer->id));
 });
 
 test('telegram user can create ticket step-by-step', function () {
@@ -259,5 +262,66 @@ test('telegram user can create ticket step-by-step', function () {
     expect($ticket->olt)->toBe('OLT-JKT-01');
     expect($ticket->location)->toBe('Port 04 / ODP-08');
     expect($ticket->status)->toBe('Open');
-    expect($ticket->ticket_number)->toStartWith('TCK-');
+
+    // Created through TicketWorkflow: regular TKT number, SLA window, creator and activity log.
+    expect($ticket->ticket_number)->toBe(TicketWorkflow::numberFor($ticket->id));
+    expect($ticket->created_by)->toBe($user->id);
+    expect($ticket->sla_deadline)->not->toBeNull();
+    expect($ticket->sla_status)->toBe(Ticket::SLA_ACTIVE);
+    expect(TicketActivity::where('ticket_id', $ticket->id)->where('action', 'created')->where('user_id', $user->id)->exists())->toBeTrue();
+});
+
+test('telegram ticket wizard respects the ticket policy', function () {
+    $technician = User::factory()->create(['role' => 'lapangan']);
+    $customer = Customer::create([
+        'name' => 'Dewi',
+        'phone' => '0811111111',
+        'address' => 'Jl. Anggrek 8',
+    ]);
+
+    $manager = app(TelegramConversationManager::class);
+    $chatId = 555555;
+    Cache::forever("telegram_auth_{$chatId}", $technician->id);
+
+    // Field technicians may not create tickets or customers (TicketPolicy / CustomerPolicy::create).
+    foreach (['menu_create_ticket', 'menu_add_customer', "select_cust_{$customer->id}"] as $data) {
+        $manager->handleUpdate([
+            'callback_query' => [
+                'id' => 'cb_'.$data,
+                'message' => ['chat' => ['id' => $chatId]],
+                'data' => $data,
+            ],
+        ]);
+    }
+
+    expect(Cache::get("telegram_state_{$chatId}"))->toBeNull();
+    expect(Ticket::count())->toBe(0);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'sendMessage')
+        && str_contains($request->data()['text'] ?? '', 'tidak memiliki izin'));
+});
+
+test('telegram login is throttled per chat', function () {
+    $manager = app(TelegramConversationManager::class);
+    $chatId = 444444;
+
+    $login = function (string $email, string $password) use ($manager, $chatId) {
+        $manager->handleUpdate(['callback_query' => ['id' => 'cb', 'message' => ['chat' => ['id' => $chatId]], 'data' => 'menu_login']]);
+        $manager->handleUpdate(['message' => ['chat' => ['id' => $chatId], 'text' => $email]]);
+        $manager->handleUpdate(['message' => ['chat' => ['id' => $chatId], 'message_id' => 5, 'text' => $password]]);
+    };
+
+    $admin = User::factory()->create([
+        'email' => 'admin2@ayyanet.test',
+        'password' => Hash::make('secret123'),
+        'role' => 'admin',
+    ]);
+
+    foreach (range(1, 5) as $attempt) {
+        $login('admin2@ayyanet.test', 'wrong-password');
+    }
+
+    // Locked out: even the right password is refused until the window passes.
+    $login('admin2@ayyanet.test', 'secret123');
+    expect($manager->getAuthenticatedStaff($chatId))->toBeNull();
 });

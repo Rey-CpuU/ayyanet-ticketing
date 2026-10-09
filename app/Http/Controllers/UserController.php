@@ -2,31 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Mail\UserInvitation;
 use App\Models\Invitation;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    private const ROLES = ['admin', 'cs', 'lapangan'];
-
     public function index()
     {
         $users = User::withCount('createdTickets')->latest()->get();
         $invitations = Invitation::whereNull('accepted_at')->latest()->get();
-
-        if (request()->wantsJson()) {
-            return response()->json($users->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'role' => $user->role,
-                    'email' => $user->email,
-                ];
-            }));
-        }
 
         return view('users.index', compact('users', 'invitations'));
     }
@@ -36,24 +25,33 @@ class UserController extends Controller
         return view('users.create');
     }
 
+    /**
+     * Public registration is closed: an admin invites a new account by email. The invitee picks
+     * a name and password through the signed invitation link (see InvitationController).
+     */
     public function store(Request $request)
     {
-        $request->validate([
-            'email' => ['required', 'email', 'unique:users,email'],
-            'role'  => ['required', 'in:' . implode(',', self::ROLES)],
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'role' => ['required', Rule::in(User::ROLES)],
         ]);
 
-        $invitation = \App\Models\Invitation::create([
-            'email'      => $request->email,
-            'role'       => $request->role,
-            'token'      => Str::random(64),
-            'expires_at' => now()->addHours(24),
-            'created_by' => \Illuminate\Support\Facades\Auth::id(),
-        ]);
+        // One invitation row per email: re-inviting refreshes the token instead of failing on the unique key.
+        $invitation = Invitation::updateOrCreate(
+            ['email' => $data['email']],
+            [
+                'role' => $data['role'],
+                'token' => Str::random(64),
+                'expires_at' => now()->addHours(24),
+                'accepted_at' => null,
+                'created_by' => $request->user()->id,
+            ],
+        );
 
-        \Illuminate\Support\Facades\Mail::to($invitation->email)->send(new \App\Mail\UserInvitation($invitation));
+        Mail::to($invitation->email)->send(new UserInvitation($invitation));
 
-        return redirect()->route('users.index')->with('success', "Undangan dikirim ke {$invitation->email}");
+        return redirect()->route('users.index')
+            ->with('success', "Undangan dikirim ke {$invitation->email}.");
     }
 
     public function edit(User $user)
@@ -64,10 +62,14 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $data = $request->validate([
-            'name'  => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'role'  => ['required', 'in:' . implode(',', self::ROLES)],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'role' => ['required', Rule::in(User::ROLES)],
         ]);
+
+        if ($error = User::roleChangeError($request->user(), $user, $data['role'])) {
+            return back()->withErrors(['role' => $error])->withInput();
+        }
 
         $user->update($data);
 

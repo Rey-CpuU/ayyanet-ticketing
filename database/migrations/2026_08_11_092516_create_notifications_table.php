@@ -11,6 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Databases that ran the identical 2026_10_09_200200 migration (removed as a duplicate)
+        // already have this table.
+        if (Schema::hasTable('notifications')) {
+            return;
+        }
+
         Schema::create('notifications', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('type');

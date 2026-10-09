@@ -81,7 +81,7 @@
                                     <div class="flex items-center gap-2">
                                         <a href="{{ route('users.edit', $user) }}" class="btn-secondary !px-3 !py-1.5 text-xs">Edit</a>
                                         @if ($user->id !== auth()->id())
-                                            <form method="POST" action="{{ route('users.destroy', $user) }}" onsubmit="return confirm('Hapus akun {{ $user->name }}?')">
+                                            <form method="POST" action="{{ route('users.destroy', $user) }}" onsubmit="return confirm({{ Js::from('Hapus akun '.$user->name.'?') }})">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn-danger !px-3 !py-1.5 text-xs">Delete</button>

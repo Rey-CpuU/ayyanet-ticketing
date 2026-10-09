@@ -39,7 +39,6 @@ Homestead.yaml
 
 .vercel
 vercel.json
-vite.config.js
 
 # AI & Agent artifacts
 .agents/

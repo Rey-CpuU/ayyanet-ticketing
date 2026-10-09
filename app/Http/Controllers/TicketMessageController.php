@@ -3,77 +3,44 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ticket;
-use App\Models\TicketActivity;
-use App\Models\TicketMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TicketMessageController extends Controller
 {
-    public function store(Request $request, $ticketId)
+    public function store(Request $request, Ticket $ticket)
     {
-        $ticket = Ticket::findOrFail($ticketId);
+        $this->authorize('reply', $ticket);
 
-        $request->validate([
-            'message' => 'required|string',
+        $validated = $request->validate([
+            'message' => ['required', 'string', 'max:2000'],
+            'type' => ['nullable', 'string', 'in:internal,external'],
+            'is_internal' => ['nullable', 'boolean'],
         ]);
 
-        $isInternal = $request->boolean('is_internal');
+        $isInternal = $request->boolean('is_internal') || ($validated['type'] ?? null) === 'internal';
 
-        TicketMessage::create([
-            'ticket_id'   => $ticket->id,
-            'user_id'     => Auth::id(),
-            'message'     => $request->message,
-            'is_internal' => $isInternal,
-        ]);
+        if ($isInternal) {
+            $this->authorize('addInternalNote', $ticket);
+        }
 
-        TicketActivity::create([
-            'ticket_id' => $ticket->id,
-            'user_id'   => Auth::id(),
-            'action'    => $isInternal ? 'internal_note' : 'reply',
-            'new_value' => $request->message,
-        ]);
+        // Messages are never emailed to the customer here; internal notes in particular stay in-app only.
+        DB::transaction(function () use ($ticket, $validated, $isInternal) {
+            $ticket->messages()->create([
+                'user_id' => Auth::id(),
+                'message' => $validated['message'],
+                'is_internal' => $isInternal,
+                'type' => $isInternal ? 'internal' : 'external',
+            ]);
 
-        return back()->with('success', $isInternal
-            ? 'Internal note ditambahkan.'
-            : 'Pesan berhasil dikirim!');
-    }
+            $ticket->activities()->create([
+                'user_id' => Auth::id(),
+                'action' => $isInternal ? 'internal_note' : 'reply',
+                'new_value' => $validated['message'],
+            ]);
+        });
 
-    public function quickStore(Request $request, Ticket $ticket)
-    {
-        $request->validate([
-            'message' => 'required|string',
-        ]);
-
-        $isInternal = $request->boolean('is_internal');
-
-        $msg = TicketMessage::create([
-            'ticket_id'   => $ticket->id,
-            'user_id'     => Auth::id(),
-            'message'     => $request->message,
-            'is_internal' => $isInternal,
-        ]);
-
-        TicketActivity::create([
-            'ticket_id' => $ticket->id,
-            'user_id'   => Auth::id(),
-            'action'    => $isInternal ? 'internal_note' : 'reply',
-            'new_value' => $request->message,
-        ]);
-
-        $sender = Auth::user()->name ?? 'CS Ayyanet';
-
-        return response()->json([
-            'success' => true,
-            'message' => [
-                'id'            => $msg->id,
-                'user_name'     => $sender,
-                'user_initials'   => strtoupper(substr($sender, 0, 2)),
-                'is_internal'   => (bool) $msg->is_internal,
-                'message'       => $msg->message,
-                'created_at'    => $msg->created_at->format('H:i'),
-                'date_str'      => $msg->created_at->format('d M Y, H:i'),
-            ],
-        ]);
+        return back()->with('success', $isInternal ? 'Catatan internal berhasil disimpan' : 'Pesan berhasil dikirim');
     }
 }

@@ -1,262 +1,728 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="font-display text-[17px] font-bold tracking-[-0.02em] text-[var(--foreground)]">Tickets</h2>
-                <p class="mt-0.5 text-[12.5px] text-[var(--muted)]">{{ $tickets->count() }} ticket(s) in the system</p>
-            </div>
-            <a href="{{ route('tickets.create') }}" class="btn-primary">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                </svg>
-                New Ticket
-            </a>
-        </div>
-    </x-slot>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ $pageTitle ?? 'Tickets' }}</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        :root {
+            --bg: #0b1120;
+            --panel: #111827;
+            --panel-alt: #0f172a;
+            --line: #243044;
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --primary: #8b5cf6;
+            --primary-soft: rgba(139, 92, 246, 0.15);
+            --green: #22c55e;
+            --green-soft: rgba(34, 197, 94, 0.15);
+            --amber: #f59e0b;
+            --amber-soft: rgba(245, 158, 11, 0.15);
+            --blue: #60a5fa;
+            --blue-soft: rgba(96, 165, 250, 0.15);
+            --red: #f87171;
+            --red-soft: rgba(248, 113, 113, 0.12);
+        }
 
-    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        @if (session('success'))
-            <div class="mb-5 rounded-md border border-[var(--green-text-30)] bg-[var(--green-text-10)] px-4 py-3 text-[13px] font-medium text-[var(--green-text)]">
-                {{ session('success') }}
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: linear-gradient(180deg, #020817 0%, #0f172a 100%);
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .wrap {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 32px 20px 48px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 2rem;
+            letter-spacing: -0.03em;
+        }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 18px;
+            border-radius: 12px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.08);
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn.secondary {
+            background: rgba(148, 163, 184, 0.08);
+            color: var(--text);
+        }
+
+        .btn.danger {
+            background: var(--red-soft);
+            color: var(--red);
+            border-color: rgba(248, 113, 113, 0.3);
+        }
+
+        .btn .spinner {
+            display: none;
+        }
+
+        .btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn.loading .spinner {
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .panel {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        th {
+            background: rgba(30, 41, 59, 0.9);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
+        tbody tr:hover {
+            background: rgba(148, 163, 184, 0.03);
+        }
+
+        .ticket-id {
+            font-weight: 700;
+            color: #c4b5fd;
+        }
+
+        .customer-name {
+            font-weight: 700;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+        }
+
+        .status-open { background: var(--blue-soft); color: var(--blue); }
+        .status-checking { background: var(--amber-soft); color: var(--amber); }
+        .status-waiting-customer { background: var(--amber-soft); color: var(--amber); }
+        .status-solved { background: var(--green-soft); color: var(--green); }
+        .status-closed { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+        .status-escalated { background: rgba(248, 113, 113, 0.12); color: var(--red); }
+
+        .priority-low { color: #7dd3fc; }
+        .priority-medium { color: #fbbf24; }
+        .priority-high { color: #f87171; }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .link {
+            color: #c4b5fd;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .empty {
+            padding: 28px 18px;
+            color: var(--muted);
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 48px 24px;
+            text-align: center;
+        }
+
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            font-size: 1.6rem;
+            color: #c4b5fd;
+        }
+
+        .empty-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .empty-subtitle {
+            color: var(--muted);
+            font-size: 0.9rem;
+            max-width: 320px;
+        }
+
+        .empty-action {
+            margin-top: 8px;
+        }
+
+        /* Skeleton loading */
+        .skeleton-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+            gap: 12px;
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--line);
+            align-items: center;
+        }
+
+        .skeleton-line {
+            height: 14px;
+            border-radius: 8px;
+            background: linear-gradient(90deg, rgba(148, 163, 184, 0.08) 25%, rgba(148, 163, 184, 0.18) 50%, rgba(148, 163, 184, 0.08) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+        }
+
+        .skeleton-line.short { width: 60%; }
+        .skeleton-line.tiny { width: 40%; height: 10px; }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+        }
+
+        .spinner.dark {
+            border-color: rgba(139, 92, 246, 0.2);
+            border-top-color: #8b5cf6;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Confirm delete modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 8, 23, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background: #111827;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 28px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: var(--red-soft);
+            color: var(--red);
+            font-size: 1.4rem;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .modal-text {
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-actions .btn {
+            padding: 10px 16px;
+            font-size: 0.85rem;
+        }
+
+        .pagination {
+            padding: 16px 18px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .pagination a, .pagination span {
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(148, 163, 184, 0.08);
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .pagination .active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .pagination ul {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .pagination .active span {
+            background: var(--primary);
+            color: white;
+        }
+
+        .pagination .disabled span {
+            opacity: 0.45;
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .filters input,
+        .filters select {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: var(--panel-alt);
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .filters .filter-search {
+            flex: 1 1 260px;
+            min-width: 0;
+        }
+
+        .filters input:focus,
+        .filters select:focus {
+            outline: 2px solid rgba(139, 92, 246, 0.4);
+            border-color: var(--primary);
+        }
+
+        .result-count {
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+        }
+
+        .flash {
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        .flash-success {
+            background: var(--green-soft);
+            border: 1px solid var(--green);
+            color: var(--green);
+        }
+
+        tr.is-trashed td {
+            opacity: 0.75;
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .row-actions form {
+            margin: 0;
+        }
+
+        .link-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            color: #c4b5fd;
+            font-weight: 700;
+            font-size: inherit;
+        }
+
+        .link-btn.danger {
+            color: var(--red);
+        }
+
+        @media (max-width: 720px) {
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            th, td {
+                padding: 12px 10px;
+            }
+
+            .skeleton-row {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .skeleton-line:nth-child(3),
+            .skeleton-line:nth-child(4),
+            .skeleton-line:nth-child(5) {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    @include('partials.status-banner')
+    <div class="wrap">
+        <div class="topbar">
+            <h2 class="title">{{ $pageTitle ?? 'Tickets' }}</h2>
+            <div class="actions">
+                <x-notification-bell />
+                <a href="{{ route('dashboard') }}" class="btn secondary">Dashboard</a>
+                <a href="{{ route('tickets.export.csv') }}" class="btn secondary" id="export-csv-btn">
+                    <span class="spinner dark" style="display:none;"></span>
+                    Export CSV
+                </a>
+                <a href="{{ route('tickets.export.pdf') }}" class="btn secondary" target="_blank" id="export-pdf-btn">
+                    <span class="spinner dark" style="display:none;"></span>
+                    Export PDF
+                </a>
+                @can('create', App\Models\Ticket::class)
+                    <a href="{{ route('tickets.create') }}" class="btn">+ New Ticket</a>
+                @endcan
             </div>
+        </div>
+
+        @if(session('success'))
+            <div class="flash flash-success" role="status">{{ session('success') }}</div>
         @endif
 
-        <div class="card card-3d overflow-hidden rounded-lg" x-data="{ search: '', status: '', priority: '', assignee: '', customer: '' }">
-            {{-- Filter bar --}}
-            <div class="border-b border-[var(--border)] bg-[var(--surface-3)] px-4 py-3 sm:px-5">
-                <div class="flex flex-wrap items-center gap-2">
-                    <div class="min-w-[160px] flex-1">
-                        <input type="text" id="ticket_search" name="search" aria-label="Search title or number" x-model="search" placeholder="Search title or number..."
-                               class="w-full rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-2.5 py-1 text-[11.5px] text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--accent)] focus:outline-none" />
-                    </div>
-                    {{-- Status Dropdown --}}
-                    <div class="relative w-full sm:w-auto" x-data="{ open: false }" @click.outside="open = false">
-                        <button type="button" @click="open = !open"
-                                class="flex w-full items-center justify-between gap-2.5 rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--surface-3)] focus:border-[var(--accent)] focus:outline-none sm:w-auto min-w-[125px]">
-                            <span class="truncate" x-text="status ? status : 'All Statuses'">All Statuses</span>
-                            <svg class="h-3.5 w-3.5 shrink-0 text-[var(--muted)] transition-transform duration-200" :class="{ 'rotate-180 text-[var(--accent)]': open }" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        <div x-show="open" x-cloak
-                             x-transition:enter="transition ease-out duration-200"
-                             x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
-                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                             x-transition:leave="transition ease-in duration-150"
-                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                             x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-                             class="absolute left-0 top-full z-50 mt-1.5 w-44 overflow-hidden rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] shadow-2xl backdrop-blur-md py-1">
-                            <template x-for="opt in ['', 'Open', 'Checking', 'Waiting Customer', 'Escalated', 'Solved', 'Closed']" :key="opt">
-                                <button type="button" @click="status = opt; open = false"
-                                        class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
-                                        :class="status === opt ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
-                                    <span x-text="opt ? opt : 'All Statuses'"></span>
-                                    <span x-show="status === opt" class="text-[var(--accent)] shrink-0">✓</span>
-                                </button>
-                            </template>
-                        </div>
-                    </div>
+        @php
+            $hasFilters = collect($filters)->except('sort')->filter(fn ($value) => $value !== '')->isNotEmpty();
+        @endphp
 
-                    {{-- Priority Dropdown --}}
-                    <div class="relative w-full sm:w-auto" x-data="{ open: false }" @click.outside="open = false">
-                        <button type="button" @click="open = !open"
-                                class="flex w-full items-center justify-between gap-2.5 rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--surface-3)] focus:border-[var(--accent)] focus:outline-none sm:w-auto min-w-[125px]">
-                            <span class="truncate" x-text="priority ? priority : 'All Priorities'">All Priorities</span>
-                            <svg class="h-3.5 w-3.5 shrink-0 text-[var(--muted)] transition-transform duration-200" :class="{ 'rotate-180 text-[var(--accent)]': open }" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        <div x-show="open" x-cloak
-                             x-transition:enter="transition ease-out duration-200"
-                             x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
-                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                             x-transition:leave="transition ease-in duration-150"
-                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                             x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-                             class="absolute left-0 top-full z-50 mt-1.5 w-40 overflow-hidden rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] shadow-2xl backdrop-blur-md py-1">
-                            <template x-for="opt in ['', 'High', 'Medium', 'Low']" :key="opt">
-                                <button type="button" @click="priority = opt; open = false"
-                                        class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
-                                        :class="priority === opt ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
-                                    <span x-text="opt ? opt : 'All Priorities'"></span>
-                                    <span x-show="priority === opt" class="text-[var(--accent)] shrink-0">✓</span>
-                                </button>
-                            </template>
-                        </div>
-                    </div>
-                    {{-- Assignee Dropdown --}}
-                    <div class="relative w-full sm:w-auto" x-data="{ open: false }" @click.outside="open = false">
-                        <button type="button" @click="open = !open"
-                                class="flex w-full items-center justify-between gap-2.5 rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--surface-3)] focus:border-[var(--accent)] focus:outline-none sm:w-auto min-w-[130px]">
-                            <span class="truncate" x-text="assignee ? (assignee === 'unassigned' ? 'Unassigned' : document.querySelector(`[data-agent-id='${assignee}']`)?.dataset?.agentName || 'Assignee') : 'All Assignees'">All Assignees</span>
-                            <svg class="h-3.5 w-3.5 shrink-0 text-[var(--muted)] transition-transform duration-200" :class="{ 'rotate-180 text-[var(--accent)]': open }" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        <div x-show="open" x-cloak
-                             x-transition:enter="transition ease-out duration-200"
-                             x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
-                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                             x-transition:leave="transition ease-in duration-150"
-                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                             x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-                             class="absolute left-0 top-full z-50 mt-1.5 w-48 max-h-60 overflow-y-auto rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] shadow-2xl backdrop-blur-md py-1 divide-y divide-[var(--border-60)]">
-                            <button type="button" @click="assignee = ''; open = false"
-                                    class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
-                                    :class="assignee === '' ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
-                                <span>All Assignees</span>
-                                <span x-show="assignee === ''" class="text-[var(--accent)] shrink-0">✓</span>
-                            </button>
-                            <button type="button" @click="assignee = 'unassigned'; open = false"
-                                    class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
-                                    :class="assignee === 'unassigned' ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
-                                <span>Unassigned</span>
-                                <span x-show="assignee === 'unassigned'" class="text-[var(--accent)] shrink-0">✓</span>
-                            </button>
-                            @foreach ($assignableUsers as $agent)
-                                <button type="button" @click="assignee = '{{ $agent->id }}'; open = false"
-                                        data-agent-id="{{ $agent->id }}" data-agent-name="{{ $agent->name }}"
-                                        class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
-                                        :class="assignee === '{{ $agent->id }}' ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
-                                    <span class="truncate">{{ $agent->name }}</span>
-                                    <span x-show="assignee === '{{ $agent->id }}'" class="text-[var(--accent)] shrink-0">✓</span>
-                                </button>
-                            @endforeach
-                        </div>
-                    </div>
+        <form method="GET" action="{{ url()->current() }}" class="filters" role="search" aria-label="Filter tiket">
+            <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Cari nomor tiket, judul, atau customer..." aria-label="Cari tiket" class="filter-search">
+            <select name="status" aria-label="Filter status">
+                <option value="">Semua status</option>
+                @foreach(App\Models\Ticket::STATUSES as $status)
+                    <option value="{{ $status }}" @selected($filters['status'] === $status)>{{ $status }}</option>
+                @endforeach
+            </select>
+            <select name="priority" aria-label="Filter prioritas">
+                <option value="">Semua prioritas</option>
+                @foreach(App\Models\Ticket::PRIORITIES as $priority)
+                    <option value="{{ $priority }}" @selected($filters['priority'] === $priority)>{{ $priority }}</option>
+                @endforeach
+            </select>
+            <select name="category" aria-label="Filter kategori">
+                <option value="">Semua kategori</option>
+                @foreach($categories as $category)
+                    <option value="{{ $category }}" @selected($filters['category'] === $category)>{{ $category }}</option>
+                @endforeach
+            </select>
+            <select name="assigned_to" aria-label="Filter penanggung jawab">
+                <option value="">Semua penanggung jawab</option>
+                <option value="unassigned" @selected($filters['assigned_to'] === 'unassigned')>Belum ditugaskan</option>
+                @foreach($assignees as $assignee)
+                    <option value="{{ $assignee->id }}" @selected($filters['assigned_to'] === (string) $assignee->id)>{{ $assignee->name }}</option>
+                @endforeach
+            </select>
+            @if(auth()->user()->isAdmin())
+                <select name="trashed" aria-label="Filter tiket terhapus">
+                    <option value="">Tiket aktif</option>
+                    <option value="with" @selected($filters['trashed'] === 'with')>Termasuk terhapus</option>
+                    <option value="only" @selected($filters['trashed'] === 'only')>Hanya terhapus</option>
+                </select>
+            @endif
+            <select name="sort" aria-label="Urutkan">
+                @foreach($sorts as $value => $label)
+                    <option value="{{ $value }}" @selected($filters['sort'] === $value)>Urut: {{ $label }}</option>
+                @endforeach
+            </select>
+            <button type="submit" class="btn">Terapkan</button>
+            @if($hasFilters || $filters['sort'] !== 'newest')
+                <a href="{{ url()->current() }}" class="btn secondary">Reset</a>
+            @endif
+        </form>
 
-                    {{-- Customer Dropdown --}}
-                    <div class="relative w-full sm:w-auto" x-data="{ open: false }" @click.outside="open = false">
-                        <button type="button" @click="open = !open"
-                                class="flex w-full items-center justify-between gap-2.5 rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-[12px] font-medium text-[var(--foreground)] transition hover:border-[var(--accent)] hover:bg-[var(--surface-3)] focus:border-[var(--accent)] focus:outline-none sm:w-auto min-w-[130px]">
-                            <span class="truncate" x-text="customer ? (document.querySelector(`[data-cust-id='${customer}']`)?.dataset?.custName || 'Customer') : 'All Customers'">All Customers</span>
-                            <svg class="h-3.5 w-3.5 shrink-0 text-[var(--muted)] transition-transform duration-200" :class="{ 'rotate-180 text-[var(--accent)]': open }" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        <div x-show="open" x-cloak
-                             x-transition:enter="transition ease-out duration-200"
-                             x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
-                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                             x-transition:leave="transition ease-in duration-150"
-                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                             x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-                             class="absolute left-0 top-full z-50 mt-1.5 w-52 max-h-60 overflow-y-auto rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] shadow-2xl backdrop-blur-md py-1 divide-y divide-[var(--border-60)]">
-                            <button type="button" @click="customer = ''; open = false"
-                                    class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
-                                    :class="customer === '' ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
-                                <span>All Customers</span>
-                                <span x-show="customer === ''" class="text-[var(--accent)] shrink-0">✓</span>
-                            </button>
-                            @foreach ($uniqueCustomers as $cust)
-                                <button type="button" @click="customer = '{{ $cust->id }}'; open = false"
-                                        data-cust-id="{{ $cust->id }}" data-cust-name="{{ $cust->name }}"
-                                        class="flex w-full items-center justify-between px-3.5 py-2 text-left text-[12px] transition hover:bg-[var(--hover-overlay)] hover:pl-4.5"
-                                        :class="customer === '{{ $cust->id }}' ? 'font-semibold text-[var(--accent)] bg-[var(--surface-3)]' : 'font-medium text-[var(--foreground)]'">
-                                    <span class="truncate">{{ $cust->name }}</span>
-                                    <span x-show="customer === '{{ $cust->id }}'" class="text-[var(--accent)] shrink-0">✓</span>
-                                </button>
-                            @endforeach
-                        </div>
-                    </div>
+        <div class="result-count muted">{{ $tickets->total() }} tiket ditemukan</div>
 
-                    <button type="button" @click="search = ''; status = ''; priority = ''; assignee = ''; customer = ''"
-                            x-show="search !== '' || status !== '' || priority !== '' || assignee !== '' || customer !== ''"
-                            class="text-[11.5px] font-semibold text-[var(--accent)] hover:text-[var(--accent-text)] transition" x-cloak>
-                        Clear
-                    </button>
-                </div>
+        <div class="panel">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ticket</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Penanggung Jawab</th>
+                        <th>Created</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="ticket-table-body">
+                    @forelse($tickets as $ticket)
+                        <tr class="{{ $ticket->trashed() ? 'is-trashed' : '' }}">
+                            <td>
+                                <div class="ticket-id">{{ $ticket->ticket_number ?? 'TKT-' . str_pad((string)$ticket->id, 4, '0', STR_PAD_LEFT) }}</div>
+                                <div class="muted">{{ $ticket->title }}</div>
+                            </td>
+                            <td class="customer-name">{{ $ticket->customer->name ?? 'N/A' }}</td>
+                            <td>
+                                <span class="badge status-{{ Str::slug(strtolower($ticket->status)) }}">
+                                    {{ $ticket->status }}
+                                </span>
+                                @if($ticket->trashed())
+                                    <span class="badge status-escalated">Terhapus</span>
+                                @endif
+                            </td>
+                            <td class="priority-{{ strtolower($ticket->priority ?? 'medium') }}">{{ $ticket->priority ?? 'Medium' }}</td>
+                            <td class="muted">{{ $ticket->assignee->name ?? '-' }}</td>
+                            <td class="muted">{{ $ticket->created_at?->format('d M Y') ?? '-' }}</td>
+                            <td>
+                                @if($ticket->trashed())
+                                    <div class="row-actions">
+                                        @can('restore', $ticket)
+                                            <form method="POST" action="{{ route('tickets.restore', $ticket->id) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="link-btn">Pulihkan</button>
+                                            </form>
+                                        @endcan
+                                        @can('forceDelete', $ticket)
+                                            <form method="POST" action="{{ route('tickets.force-delete', $ticket->id) }}" id="force-delete-ticket-{{ $ticket->id }}">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="button" class="link-btn danger" onclick="openDeleteModal({{ Js::from($ticket->ticket_number) }}, 'force-delete-ticket-{{ $ticket->id }}')">Hapus permanen</button>
+                                            </form>
+                                        @endcan
+                                    </div>
+                                @else
+                                    <a class="link" href="{{ route('tickets.show', $ticket->id) }}">View</a>
+                                    @if(!empty($showMyTicketsOnly) && $showMyTicketsOnly)
+                                        <span class="muted" style="font-size: 0.8rem;">(Milik saya)</span>
+                                    @endif
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty-state">
+                                    <div class="empty-icon">🎫</div>
+                                    @if($hasFilters)
+                                        <div class="empty-title">Tidak Ada Tiket yang Cocok</div>
+                                        <div class="empty-subtitle">Coba ubah kata kunci atau filter pencarian.</div>
+                                        <a href="{{ url()->current() }}" class="btn secondary empty-action">Reset filter</a>
+                                    @else
+                                        <div class="empty-title">Belum Ada Tiket</div>
+                                        <div class="empty-subtitle">
+                                            @if(!empty($showMyTicketsOnly) && $showMyTicketsOnly)
+                                                Anda belum memiliki tiket. Buat tiket baru untuk mulai menerima request pelanggan.
+                                            @else
+                                                Belum ada tiket untuk ditampilkan. Buat tiket baru untuk mulai menerima request pelanggan.
+                                            @endif
+                                        </div>
+                                        @can('create', App\Models\Ticket::class)
+                                            <a href="{{ route('tickets.create') }}" class="btn empty-action">+ Buat Tiket Baru</a>
+                                        @endcan
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+
+            <!-- Skeleton loading (shown while page loads) -->
+            <div id="skeleton-loading" style="display: none;">
+                @for($i = 0; $i < 5; $i++)
+                    <div class="skeleton-row">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line short"></div>
+                        <div class="skeleton-line tiny"></div>
+                        <div class="skeleton-line short"></div>
+                        <div class="skeleton-line tiny"></div>
+                    </div>
+                @endfor
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full min-w-[980px] text-left">
-                    <thead>
-                        <tr class="border-b border-[var(--border)] bg-[var(--surface)]">
-                            <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Ticket</th>
-                            <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Customer</th>
-                            <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Priority</th>
-                            <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Status</th>
-                            <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Assignee</th>
-                            <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Messages</th>
-                            <th class="px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Created</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[var(--border)]">
-                        @forelse ($tickets as $ticket)
-                            @php
-                                $priorityColor = match ($ticket->priority) {
-                                    'High' => 'var(--amber-text)',
-                                    'Medium' => 'var(--blue-text)',
-                                    default => 'var(--muted)',
-                                };
-                                $statusBadge = match ($ticket->status) {
-                                    'Open' => ['bg' => 'color-mix(in srgb, var(--red-text) 12%, transparent)', 'text' => 'var(--red-text)'],
-                                    'Checking' => ['bg' => 'color-mix(in srgb, var(--violet-text) 15%, transparent)', 'text' => 'var(--violet-text)'],
-                                    'Waiting Customer' => ['bg' => 'color-mix(in srgb, var(--amber-text) 12%, transparent)', 'text' => 'var(--amber-text)'],
-                                    'Escalated' => ['bg' => 'color-mix(in srgb, var(--orange-text) 14%, transparent)', 'text' => 'var(--orange-text)'],
-                                    'Solved' => ['bg' => 'color-mix(in srgb, var(--green-text) 12%, transparent)', 'text' => 'var(--green-text)'],
-                                    default => ['bg' => 'color-mix(in srgb, var(--slate-text) 12%, transparent)', 'text' => 'var(--slate-text)'],
-                                };
-                            @endphp
-                            <tr class="transition hover:bg-[var(--hover-overlay)]"
-                                x-show="(search === '' || 
-                                         '{{ strtolower(addslashes($ticket->title)) }}'.includes(search.toLowerCase()) || 
-                                         '{{ strtolower($ticket->ticket_number) }}'.includes(search.toLowerCase()) ||
-                                         '{{ strtolower(addslashes($ticket->customer->name ?? '')) }}'.includes(search.toLowerCase()) ||
-                                         '{{ strtolower($ticket->customer->phone ?? '') }}'.includes(search.toLowerCase()) ||
-                                         '{{ strtolower($ticket->customer->customer_id ?? '') }}'.includes(search.toLowerCase()) ||
-                                         '{{ strtolower($ticket->category ?? '') }}'.includes(search.toLowerCase())) &&
-                                        (status === '' || '{{ $ticket->status }}' === status) &&
-                                        (priority === '' || '{{ $ticket->priority }}' === priority) &&
-                                        (assignee === '' || (assignee === 'unassigned' ? {{ $ticket->assigned_to === null ? 'true' : 'false' }} : '{{ $ticket->assigned_to }}' === assignee)) &&
-                                        (customer === '' || '{{ $ticket->customer_id }}' === customer)"
-                                x-cloak>
-                                <td class="px-5 py-4">
-                                    <a href="{{ route('tickets.show', $ticket) }}" class="group block">
-                                        <span class="font-mono text-[11px] font-medium text-[var(--accent)]">{{ $ticket->ticket_number }}</span>
-                                        <span class="mt-0.5 block max-w-[340px] truncate text-[13.5px] font-medium text-[var(--foreground)] group-hover:text-[var(--accent-text)]">{{ $ticket->title }}</span>
-                                    </a>
-                                </td>
-                                <td class="px-5 py-4">
-                                    <div class="text-[13px] text-[var(--foreground)]">{{ $ticket->customer->name ?? 'Unknown' }}</div>
-                                    <div class="text-[11.5px] text-[var(--muted)]">{{ $ticket->customer->phone ?? '' }}</div>
-                                </td>
-                                <td class="px-5 py-4">
-                                    <span class="flex items-center gap-1.5 text-[11px] font-medium">
-                                        <span class="h-1.5 w-1.5 rounded-full" style="background: {{ $priorityColor }}"></span>
-                                        <span class="font-mono uppercase tracking-[0.04em]" style="color: {{ $priorityColor }}">{{ $ticket->priority }}</span>
-                                    </span>
-                                </td>
-                                <td class="px-5 py-4">
-                                    <span class="badge" style="background: {{ $statusBadge['bg'] }}; color: {{ $statusBadge['text'] }};">{{ $ticket->status }}</span>
-                                </td>
-                                <td class="px-5 py-4">
-                                    @if ($ticket->assignee)
-                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--surface-3)] px-2 py-[3px]">
-                                            <span class="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[8.5px] font-bold text-[var(--accent-text)]">{{ strtoupper(substr($ticket->assignee->name, 0, 2)) }}</span>
-                                            <span class="text-[11px] font-semibold text-[var(--accent-text-strong)]">{{ $ticket->assignee->name }}</span>
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center rounded-full border border-dashed border-[var(--amber-text-40)] px-2 py-[3px] text-[10.5px] font-semibold uppercase tracking-[0.04em] text-[var(--amber-text)]">Unassigned</span>
-                                    @endif
-                                </td>
-                                <td class="px-5 py-4 font-mono text-[12px] text-[var(--muted)]">{{ $ticket->messages->count() }}</td>
-                                <td class="px-5 py-4">
-                                    <div class="font-mono text-[11.5px] text-[var(--muted)]">{{ $ticket->created_at->format('d M Y') }}</div>
-                                    <div class="text-[10.5px] text-[var(--muted-strong)]">{{ $ticket->created_at->format('H:i') }}</div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="px-5 py-16 text-center">
-                                    <p class="text-[13.5px] font-medium text-[var(--muted)]">No tickets yet</p>
-                                    <a href="{{ route('tickets.create') }}" class="mt-2 inline-block text-[12.5px] font-semibold text-[var(--accent)] hover:text-[var(--accent-text)]">Create the first ticket →</a>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            @if($tickets->hasPages())
+                <div class="pagination">
+                    {{ $tickets->links('pagination::bootstrap-3') }}
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="confirm-delete-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-icon">⚠️</div>
+            <div class="modal-title">Apakah Anda yakin?</div>
+            <div class="modal-text">
+                Anda yakin ingin menghapus <strong id="delete-item-name">item ini</strong>? Tindakan ini tidak dapat dibatalkan.
+            </div>
+            <div class="modal-actions">
+                <button class="btn secondary" onclick="closeDeleteModal()">Batal</button>
+                <button class="btn danger" onclick="submitDelete()">Hapus</button>
             </div>
         </div>
     </div>
-</x-app-layout>
+
+    <script>
+        // Export button loading spinners
+        document.getElementById('export-csv-btn')?.addEventListener('click', function (e) {
+            const spinner = this.querySelector('.spinner');
+            if (spinner) {
+                spinner.style.display = 'inline-block';
+                this.classList.add('loading');
+            }
+        });
+
+        document.getElementById('export-pdf-btn')?.addEventListener('click', function (e) {
+            const spinner = this.querySelector('.spinner');
+            if (spinner) {
+                spinner.style.display = 'inline-block';
+                this.classList.add('loading');
+            }
+        });
+
+        // Skeleton loading simulation (shows briefly on page load)
+        window.addEventListener('DOMContentLoaded', function () {
+            const skeleton = document.getElementById('skeleton-loading');
+            const tableBody = document.getElementById('ticket-table-body');
+
+            // Only show skeleton if table is empty (no tickets yet)
+            if (tableBody && tableBody.children.length === 0) {
+                skeleton.style.display = 'block';
+                setTimeout(function () {
+                    skeleton.style.display = 'none';
+                }, 800);
+            }
+        });
+
+        // Confirm delete modal
+        let deleteFormId = null;
+
+        function openDeleteModal(itemName, formId) {
+            deleteFormId = formId;
+            document.getElementById('delete-item-name').textContent = itemName;
+            document.getElementById('confirm-delete-modal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('confirm-delete-modal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        function submitDelete() {
+            if (deleteFormId) {
+                document.getElementById(deleteFormId).requestSubmit();
+            }
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeDeleteModal();
+            }
+        });
+
+        // Close modal on overlay click
+        document.getElementById('confirm-delete-modal')?.addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+    </script>
+</body>
+</html>
