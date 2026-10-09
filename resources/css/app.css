@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --background: #0c0e14;
+    --surface: #12141c;
+    --surface-2: #181b26;
+    --surface-3: #1d2230;
+    --border: #1f2333;
+    --border-strong: #2a2f45;
+    --foreground: #e8eaf0;
+    --muted: #8b90a7;
+    --accent: #7c5cfc;
+    --accent-soft: rgba(124, 92, 252, 0.15);
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --cyan: #06b6d4;
+}
+
+html, body {
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    @apply antialiased;
+}
+
+#app {
+    min-height: 100vh;
+}
+
+.ticket-shell {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    background: var(--background);
+    overflow: hidden;
+}
+
+.ticket-shell * {
+    box-sizing: border-box;
+}
+
+.ticket-scroll::-webkit-scrollbar,
+.ticket-list::-webkit-scrollbar,
+.ticket-detail-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.ticket-scroll::-webkit-scrollbar-thumb,
+.ticket-list::-webkit-scrollbar-thumb,
+.ticket-detail-scroll::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.22);
+    border-radius: 999px;
+}
+
+.font-display {
+    font-family: 'Outfit', sans-serif;
+}
+
+.font-mono {
+    font-family: 'JetBrains Mono', monospace;
+}

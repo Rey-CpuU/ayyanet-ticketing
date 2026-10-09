@@ -1,0 +1,50 @@
+.cursor-dot {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(139, 92, 246, 0.5);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    transform: translate(-50%, -50%);
+    opacity: 1;
+}
+
+.new-ticket-btn,
+.action-btn,
+.mini-btn,
+.send-btn,
+button[type="submit"] {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.new-ticket-btn:hover,
+.action-btn:hover,
+.mini-btn:hover,
+.send-btn:hover,
+button[type="submit"]:hover {
+    transform: scale(1.03);
+}
+
+.new-ticket-btn.is-visible {
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+    0%,
+    100% {
+        box-shadow: 0 12px 24px rgba(110, 89, 255, 0.36);
+    }
+    50% {
+        box-shadow: 0 12px 32px rgba(139, 92, 246, 0.7), 0 0 12px rgba(139, 92, 246, 0.3);
+    }
+}
+
+a,
+button,
+input,
+select,
+textarea {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
