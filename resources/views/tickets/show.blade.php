@@ -108,7 +108,7 @@
                                                 Internal
                                             </span>
                                         @endif
-                                        <span class="font-mono text-[11px] text-[var(--muted)]">{{ $msg->created_at?->format('d M Y H:i') }}</span>
+                                        <span class="font-mono text-[11px] text-[var(--muted)]">{{ $msg->created_at?->inDisplayTz()->format('d M Y H:i') }}</span>
                                     </div>
                                     <div class="whitespace-pre-wrap rounded-md rounded-tl-none border p-3 text-[13px] leading-relaxed text-[var(--foreground)] {{ $msg->is_internal ? 'border-[var(--amber-text-40)] bg-[var(--amber-text-07)]' : 'border-[var(--border)] bg-[var(--surface-2)]' }}">{{ $msg->message }}</div>
                                 </div>
@@ -173,7 +173,7 @@
                                     <div class="flex flex-wrap items-center gap-2">
                                         <span class="badge {{ $actionBadgeClass }}">{{ $activity->label() }}</span>
                                         <span class="text-[12.5px] font-semibold text-[var(--foreground)]">{{ $activity->user->name ?? 'Sistem' }}</span>
-                                        <span class="font-mono text-[10.5px] text-[var(--muted)]" title="{{ $activity->created_at?->format('d M Y, H:i') }}">{{ $activity->created_at?->diffForHumans() }}</span>
+                                        <span class="font-mono text-[10.5px] text-[var(--muted)]" title="{{ $activity->created_at?->inDisplayTz()->format('d M Y, H:i') }}">{{ $activity->created_at?->diffForHumans() }}</span>
                                     </div>
                                     @if ($activity->isTransition())
                                         <p class="mt-1 text-[12px] text-[var(--muted)]">
@@ -206,16 +206,16 @@
                     <dl class="divide-y divide-[var(--border)] text-[12.5px]">
                         <div class="flex justify-between gap-3 px-5 py-3">
                             <dt class="text-[var(--muted)]">Dibuat</dt>
-                            <dd class="font-mono text-[var(--foreground)]">{{ $ticket->created_at?->format('d M Y H:i') }}</dd>
+                            <dd class="font-mono text-[var(--foreground)]">{{ $ticket->created_at?->inDisplayTz()->format('d M Y H:i') }}</dd>
                         </div>
                         <div class="flex justify-between gap-3 px-5 py-3">
                             <dt class="text-[var(--muted)]">Diperbarui</dt>
-                            <dd class="font-mono text-[var(--foreground)]">{{ $ticket->updated_at?->format('d M Y H:i') }}</dd>
+                            <dd class="font-mono text-[var(--foreground)]">{{ $ticket->updated_at?->inDisplayTz()->format('d M Y H:i') }}</dd>
                         </div>
                         @if ($ticket->resolved_at)
                             <div class="flex justify-between gap-3 px-5 py-3">
                                 <dt class="text-[var(--muted)]">Diselesaikan</dt>
-                                <dd class="font-mono text-[var(--foreground)]">{{ $ticket->resolved_at->format('d M Y H:i') }}</dd>
+                                <dd class="font-mono text-[var(--foreground)]">{{ $ticket->resolved_at->inDisplayTz()->format('d M Y H:i') }}</dd>
                             </div>
                         @endif
                         <div class="flex justify-between gap-3 px-5 py-3">
@@ -291,7 +291,7 @@
                 <div class="card overflow-hidden">
                     <div class="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
                         <h3 class="font-display text-[14px] font-bold tracking-[-0.01em] text-[var(--foreground)]">Customer</h3>
-                        @if ($ticket->customer)
+                        @if ($ticket->customer && ! $ticket->customer->trashed())
                             <a href="{{ route('customers.show', $ticket->customer) }}" class="text-[11.5px] font-semibold text-[var(--accent)] hover:text-[var(--accent-text)]">Lihat →</a>
                         @endif
                     </div>
@@ -301,7 +301,7 @@
                                 {{ strtoupper(substr($ticket->customer->name ?? '?', 0, 2)) }}
                             </div>
                             <div>
-                                <div class="text-[13.5px] font-semibold text-[var(--foreground)]">{{ $ticket->customer->name ?? 'Unknown' }}</div>
+                                <x-customer-name :customer="$ticket->customer" class="block text-[13.5px] font-semibold text-[var(--foreground)]" />
                                 <div class="font-mono text-[11px] text-[var(--muted)]">{{ $ticket->customer->customer_id ?? '' }}</div>
                             </div>
                         </div>

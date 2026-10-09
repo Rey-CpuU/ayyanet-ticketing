@@ -18,6 +18,11 @@ use App\Http\Controllers\TicketStatusController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
+// Ticket and customer ids are numeric; anything else is a 404 instead of a database type error
+// (PostgreSQL 22P02). Must be declared before the routes below.
+Route::pattern('ticket', '[0-9]+');
+Route::pattern('customer', '[0-9]+');
+
 Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');

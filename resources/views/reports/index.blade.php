@@ -23,6 +23,12 @@
     </x-slot>
 
     <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        @if ($dateError ?? null)
+            <div class="mb-5 rounded-md border border-[var(--red-text-30)] bg-[var(--red-text-10)] px-4 py-3 text-[13px] font-medium text-[var(--red-bright)]" role="alert">
+                {{ $dateError }}
+            </div>
+        @endif
+
         @php
             $cards = [
                 ['label' => 'Total Tickets', 'value' => $metrics['total'], 'class' => 'text-[var(--foreground)]', 'dot' => 'bg-[var(--foreground)]'],

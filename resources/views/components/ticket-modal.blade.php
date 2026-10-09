@@ -210,7 +210,10 @@
                         <div class="grid grid-cols-2 gap-4 text-xs">
                             <div>
                                 <span class="text-[var(--muted)]">Nama:</span>
-                                <p class="mt-0.5 font-semibold text-[var(--foreground)]" x-text="ticket.customer.name"></p>
+                                <p class="mt-0.5 font-semibold text-[var(--foreground)]">
+                                    <span x-text="ticket.customer.name"></span>
+                                    <span x-show="ticket.customer.deleted" class="ml-1 text-[10.5px] font-medium text-[var(--muted)]" title="Customer ini sudah dihapus">(dihapus)</span>
+                                </p>
                             </div>
                             <div>
                                 <span class="text-[var(--muted)]">Telepon / WhatsApp:</span>
@@ -341,15 +344,22 @@
 
             <form @submit.prevent="saveTicketEdit()" class="flex flex-1 flex-col overflow-hidden">
                 <div class="ticket-detail-scroll flex-1 space-y-4 overflow-y-auto p-6 text-xs">
-                    <div>
-                        <label for="edit_modal_ticket_title" class="label">Judul <span class="text-[var(--red-text)]">*</span></label>
-                        <input type="text" id="edit_modal_ticket_title" x-model="editForm.title" required maxlength="255" class="input">
-                    </div>
+                    {{-- Core fields: admin/cs only (TicketPolicy::updateDetails); field technicians edit status, OLT and location. --}}
+                    <template x-if="canEditDetails">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="edit_modal_ticket_title" class="label">Judul <span class="text-[var(--red-text)]">*</span></label>
+                                <input type="text" id="edit_modal_ticket_title" x-model="editForm.title" required maxlength="255" class="input">
+                                <p x-show="fieldError('title')" class="mt-1 text-[11px] text-[var(--red-bright)]" x-text="fieldError('title')"></p>
+                            </div>
 
-                    <div>
-                        <label for="edit_modal_ticket_description" class="label">Deskripsi <span class="text-[var(--red-text)]">*</span></label>
-                        <textarea id="edit_modal_ticket_description" x-model="editForm.description" rows="4" required class="input resize-none"></textarea>
-                    </div>
+                            <div>
+                                <label for="edit_modal_ticket_description" class="label">Deskripsi <span class="text-[var(--red-text)]">*</span></label>
+                                <textarea id="edit_modal_ticket_description" x-model="editForm.description" rows="4" required class="input resize-none"></textarea>
+                                <p x-show="fieldError('description')" class="mt-1 text-[11px] text-[var(--red-bright)]" x-text="fieldError('description')"></p>
+                            </div>
+                        </div>
+                    </template>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -359,29 +369,43 @@
                                     <option :value="st" x-text="st" :selected="st === editForm.status"></option>
                                 </template>
                             </select>
+                            <p x-show="fieldError('status')" class="mt-1 text-[11px] text-[var(--red-bright)]" x-text="fieldError('status')"></p>
                         </div>
 
-                        <div>
-                            <label for="edit_modal_ticket_category" class="label">Kategori</label>
-                            <select id="edit_modal_ticket_category" x-model="editForm.category" class="input">
-                                <template x-for="cat in (ticket ? ticket.categories : [])" :key="cat">
-                                    <option :value="cat" x-text="cat" :selected="cat === editForm.category"></option>
-                                </template>
-                            </select>
-                        </div>
+                        <template x-if="canEditDetails">
+                            <div>
+                                <label for="edit_modal_ticket_category" class="label">Kategori</label>
+                                <select id="edit_modal_ticket_category" x-model="editForm.category" class="input">
+                                    <template x-for="cat in (ticket ? ticket.categories : [])" :key="cat">
+                                        <option :value="cat" x-text="cat" :selected="cat === editForm.category"></option>
+                                    </template>
+                                </select>
+                                <p x-show="fieldError('category')" class="mt-1 text-[11px] text-[var(--red-bright)]" x-text="fieldError('category')"></p>
+                            </div>
+                        </template>
 
-                        <div>
-                            <label for="edit_modal_ticket_priority" class="label">Prioritas</label>
-                            <select id="edit_modal_ticket_priority" x-model="editForm.priority" class="input">
-                                <option value="Low">Low</option>
-                                <option value="Medium">Medium</option>
-                                <option value="High">High</option>
-                            </select>
-                        </div>
+                        <template x-if="canEditDetails">
+                            <div>
+                                <label for="edit_modal_ticket_priority" class="label">Prioritas</label>
+                                <select id="edit_modal_ticket_priority" x-model="editForm.priority" class="input">
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                </select>
+                                <p x-show="fieldError('priority')" class="mt-1 text-[11px] text-[var(--red-bright)]" x-text="fieldError('priority')"></p>
+                            </div>
+                        </template>
 
                         <div>
                             <label for="edit_modal_ticket_olt" class="label">OLT</label>
                             <input type="text" id="edit_modal_ticket_olt" x-model="editForm.olt" maxlength="255" placeholder="mis. OLT-01" class="input">
+                            <p x-show="fieldError('olt')" class="mt-1 text-[11px] text-[var(--red-bright)]" x-text="fieldError('olt')"></p>
+                        </div>
+
+                        <div>
+                            <label for="edit_modal_ticket_location" class="label">Lokasi</label>
+                            <input type="text" id="edit_modal_ticket_location" x-model="editForm.location" maxlength="255" placeholder="mis. Port 12" class="input">
+                            <p x-show="fieldError('location')" class="mt-1 text-[11px] text-[var(--red-bright)]" x-text="fieldError('location')"></p>
                         </div>
                     </div>
 
@@ -389,6 +413,7 @@
                         <label for="edit_modal_resolution_note" class="label">Catatan Penyelesaian</label>
                         <textarea id="edit_modal_resolution_note" x-model="editForm.resolution_note" rows="3" maxlength="2000"
                             placeholder="Wajib untuk Solved, atau Closed tanpa penyelesaian sebelumnya" class="input resize-none"></textarea>
+                        <p x-show="fieldError('resolution_note')" class="mt-1 text-[11px] text-[var(--red-bright)]" x-text="fieldError('resolution_note')"></p>
                     </div>
                 </div>
 
@@ -425,7 +450,17 @@
             savingEdit: false,
             editSuccessMessage: '',
             editErrorMessage: '',
+            editErrors: {},
             editForm: {},
+
+            get canEditDetails() {
+                return !!(this.ticket && this.ticket.can && this.ticket.can.update_details);
+            },
+
+            fieldError(field) {
+                const messages = this.editErrors[field];
+                return Array.isArray(messages) ? messages[0] : (messages || '');
+            },
 
             get statusOptions() {
                 if (!this.ticket) return [];
@@ -468,7 +503,8 @@
 
             openEditModal() {
                 if (!this.ticket || !this.ticket.can.update) return;
-                this.editForm = {
+                // Field technicians only send the fields they may change (the server ignores the rest anyway).
+                this.editForm = this.canEditDetails ? {
                     customer_id: this.ticket.customer_id,
                     title: this.ticket.title || '',
                     description: this.ticket.description || '',
@@ -478,20 +514,28 @@
                     olt: this.ticket.olt || '',
                     location: this.ticket.location || '',
                     resolution_note: '',
+                } : {
+                    status: this.ticket.status,
+                    olt: this.ticket.olt || '',
+                    location: this.ticket.location || '',
+                    resolution_note: '',
                 };
                 this.editErrorMessage = '';
+                this.editErrors = {};
                 this.showEditModal = true;
             },
 
             closeEditModal() {
                 this.showEditModal = false;
                 this.editErrorMessage = '';
+                this.editErrors = {};
             },
 
             async saveTicketEdit() {
                 if (!this.ticket || this.savingEdit) return;
                 this.savingEdit = true;
                 this.editErrorMessage = '';
+                this.editErrors = {};
 
                 try {
                     const res = await fetch(this.ticket.update_url, {
@@ -507,7 +551,12 @@
                     const data = await res.json().catch(() => ({}));
 
                     if (!res.ok) {
-                        this.editErrorMessage = data.message || 'Gagal memperbarui tiket. Periksa kembali input Anda.';
+                        // 422: field errors are shown under their inputs; 403/419/500: just the message.
+                        this.editErrors = (res.status === 422 && data.errors) ? data.errors : {};
+                        const firstError = Object.values(this.editErrors).flat()[0];
+                        this.editErrorMessage = res.status === 403
+                            ? 'Anda tidak memiliki akses untuk mengubah tiket ini.'
+                            : (firstError || data.message || 'Gagal memperbarui tiket. Periksa kembali input Anda.');
                         return;
                     }
 
@@ -555,7 +604,11 @@
                         this.newMessage = '';
                         this.$nextTick(() => this.scrollToBottom());
                     } else {
-                        this.sendError = data.message || 'Pesan gagal dikirim.';
+                        // 422: first field error (e.g. message too long); 403/419: the server message.
+                        const fieldError = data.errors ? Object.values(data.errors).flat()[0] : '';
+                        this.sendError = res.status === 403
+                            ? 'Anda tidak memiliki akses untuk membalas tiket ini.'
+                            : (fieldError || (typeof data.message === 'string' ? data.message : '') || 'Pesan gagal dikirim.');
                     }
                 } catch (err) {
                     this.sendError = 'Pesan gagal dikirim.';

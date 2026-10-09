@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ticket;
+use App\Support\DisplayTime;
+use App\Support\TicketFilters;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -19,7 +21,7 @@ class TicketExportController extends Controller
 
         $headers = [
             'Content-Type' => 'text/csv; charset=utf-8',
-            'Content-Disposition' => 'attachment; filename="tickets-'.now()->format('Y-m-d').'.csv"',
+            'Content-Disposition' => 'attachment; filename="tickets-'.DisplayTime::format(now(), 'Y-m-d').'.csv"',
         ];
 
         $callback = function () use ($query) {
@@ -35,7 +37,7 @@ class TicketExportController extends Controller
                     $ticket->status,
                     $ticket->priority,
                     $ticket->category,
-                    $ticket->created_at?->format('d M Y, H:i') ?? '-',
+                    DisplayTime::format($ticket->created_at, 'd M Y, H:i', '-'),
                     $this->sanitizeCell($ticket->creator->name ?? 'N/A'),
                 ]);
             }
@@ -53,13 +55,23 @@ class TicketExportController extends Controller
         return view('tickets.exports.pdf', [
             // Newest first, fetched chunk by chunk while the view iterates.
             'tickets' => $this->exportQuery($request)->lazyByIdDesc(self::CHUNK_SIZE),
-            'generatedAt' => now()->format('d M Y, H:i'),
+            'generatedAt' => DisplayTime::format(now(), 'd M Y, H:i T'),
         ]);
     }
 
+    /**
+     * Same scope and filters as the list page the export link came from (see tickets/index).
+     */
     private function exportQuery(Request $request): Builder
     {
-        return Ticket::with(['customer', 'creator'])->visibleTo($request->user());
+        $user = $request->user();
+        $query = Ticket::with(['customer', 'creator'])->visibleTo($user);
+
+        if ($request->query('mine') === '1') {
+            TicketFilters::onlyMine($query, $user);
+        }
+
+        return TicketFilters::apply($query, TicketFilters::fromRequest($request));
     }
 
     /**

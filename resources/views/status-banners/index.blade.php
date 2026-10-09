@@ -60,7 +60,7 @@
                                 </td>
                                 <td class="px-5 py-4 font-mono text-[11.5px] text-[var(--muted)]">
                                     @if ($banner->starts_at || $banner->ends_at)
-                                        {{ $banner->starts_at?->format('d M H:i') ?? '—' }} → {{ $banner->ends_at?->format('d M H:i') ?? '—' }}
+                                        {{ $banner->starts_at?->inDisplayTz()->format('d M H:i') ?? '—' }} → {{ $banner->ends_at?->inDisplayTz()->format('d M H:i') ?? '—' }}
                                     @else
                                         Always
                                     @endif

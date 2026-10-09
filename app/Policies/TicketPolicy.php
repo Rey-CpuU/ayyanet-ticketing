@@ -28,6 +28,15 @@ class TicketPolicy
     }
 
     /**
+     * Edit the core fields (customer, title, description, priority, category, attachment).
+     * Field technicians may only change the status (workflow rules), OLT/location and post notes.
+     */
+    public function updateDetails(User $user, Ticket $ticket): bool
+    {
+        return $user->hasRole('admin', 'cs');
+    }
+
+    /**
      * Change the assignee of a ticket.
      */
     public function assign(User $user, Ticket $ticket): bool

@@ -72,19 +72,17 @@
         </div>
 
         @php
-            $pageTicketCount = $tickets->count();
-            $pageUnassigned = $tickets->whereNull('assigned_to')->count();
-            $pageMine = $tickets->where('assigned_to', auth()->id())->count();
             $canAssign = $assignableUsers->isNotEmpty();
         @endphp
 
         {{-- Ticket queue + side panel --}}
         <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
+            {{-- Tab counters cover the open tickets of the whole filtered set (DashboardController::queueCounts). --}}
             <div class="card overflow-hidden rounded-lg"
                 x-data="ticketQueue({
-                    unassigned: {{ $pageUnassigned }},
-                    mine: {{ $pageMine }},
-                    all: {{ $pageTicketCount }},
+                    unassigned: {{ $queueCounts['unassigned'] }},
+                    mine: {{ $queueCounts['mine'] }},
+                    all: {{ $queueCounts['all'] }},
                     userId: {{ (int) auth()->id() }},
                     assignUrl: @js(url('tickets')),
                 })">
@@ -108,22 +106,26 @@
                             :class="tab === 'unassigned' ? 'text-white' : 'text-[var(--muted)] hover:text-[var(--foreground)]'"
                             class="relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors duration-200">
                             Unassigned
-                            <span class="font-mono text-[10.5px] opacity-80" x-text="unassignedCount">{{ $pageUnassigned }}</span>
+                            <span class="font-mono text-[10.5px] opacity-80" x-text="unassignedCount">{{ $queueCounts['unassigned'] }}</span>
                         </button>
                         <button type="button" x-ref="tabMine" @click="setTab('mine')"
                             :class="tab === 'mine' ? 'text-white' : 'text-[var(--muted)] hover:text-[var(--foreground)]'"
                             class="relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors duration-200">
                             Mine
-                            <span class="font-mono text-[10.5px] opacity-80" x-text="mineCount">{{ $pageMine }}</span>
+                            <span class="font-mono text-[10.5px] opacity-80" x-text="mineCount">{{ $queueCounts['mine'] }}</span>
                         </button>
                         <button type="button" x-ref="tabAll" @click="setTab('all')"
                             :class="tab === 'all' ? 'text-white' : 'text-[var(--muted)] hover:text-[var(--foreground)]'"
                             class="relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors duration-200">
                             All
-                            <span class="font-mono text-[10.5px] opacity-80">{{ $pageTicketCount }}</span>
+                            <span class="font-mono text-[10.5px] opacity-80">{{ $queueCounts['all'] }}</span>
                         </button>
                     </div>
                 </div>
+
+                <div x-show="assignError" x-cloak role="alert"
+                    class="border-b border-[var(--red-text-30)] bg-[var(--red-text-10)] px-4 py-2 text-[12px] font-semibold text-[var(--red-bright)] sm:px-5"
+                    x-text="assignError"></div>
 
                 {{-- Filter & live search bar --}}
                 <div class="border-b border-[var(--border)] bg-[var(--surface-3)] px-4 py-3 sm:px-5"
@@ -183,6 +185,7 @@
                                                 <span class="font-mono text-[11.5px] font-bold text-[var(--accent)]" x-text="item.ticket_number"></span>
                                                 <span class="text-[var(--border-strong)]">·</span>
                                                 <span class="truncate text-[12.5px] font-semibold text-[var(--foreground)]" x-text="item.customer_name"></span>
+                                                <span x-show="item.customer_deleted" class="text-[10.5px] font-medium text-[var(--muted)]">(dihapus)</span>
                                                 <template x-if="item.customer_phone">
                                                     <span class="inline-flex items-center gap-1 rounded border border-[var(--border-strong)] bg-[var(--surface-3)] px-1.5 py-[1px] font-mono text-[11px] text-[var(--muted-strong)]">
                                                         <svg class="h-3 w-3 shrink-0 text-[var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -261,7 +264,7 @@
                                         <button type="button" @click="$dispatch('open-ticket-modal', { ticketId: {{ $ticket->id }} })" class="ticket-title-link block truncate text-left text-[13.5px] font-medium text-[var(--foreground)] transition-colors duration-200" x-text="rowTitle">{{ $ticket->title }}</button>
 
                                         <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11.5px] text-[var(--muted)]">
-                                            <span class="truncate">{{ $ticket->customer->name ?? 'Unknown' }}</span>
+                                            <x-customer-name :customer="$ticket->customer" class="truncate" />
                                             <a href="{{ route('tickets.show', $ticket) }}" class="font-mono text-[10.5px] hover:text-[var(--accent)]">{{ $ticket->ticket_number }}</a>
                                             <span class="text-[var(--border-strong)]">·</span>
 
@@ -379,7 +382,7 @@
                                 </div>
                                 <div class="ticket-title-link mt-1 truncate text-[12.5px] font-medium text-[var(--foreground)] transition-colors duration-200" x-text="rowTitle">{{ $ticket->title }}</div>
                                 <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-[var(--muted)]">
-                                    <span>{{ $ticket->customer->name ?? 'Unknown' }}</span>
+                                    <x-customer-name :customer="$ticket->customer" />
                                     @if ($ticket->assignee)
                                         <span class="flex items-center gap-1 rounded-full border border-[var(--border-strong)] bg-[var(--surface-3)] px-1.5 py-[1px] text-[10px] font-semibold text-[var(--accent-text-strong)]">
                                             {{ strtoupper(substr($ticket->assignee->name, 0, 2)) }} · {{ $ticket->assignee->name }}
@@ -478,6 +481,7 @@
                                                     <span x-show="sending">...</span>
                                                 </button>
                                             </div>
+                                            <p x-show="sendError" x-cloak role="alert" class="mt-1.5 text-[11px] font-semibold text-[var(--red-bright)]" x-text="sendError"></p>
                                         </div>
                                     </div>
                                 </template>
@@ -501,6 +505,7 @@
                 unassignedCount: config.unassigned,
                 mineCount: config.mine,
                 currentUserId: config.userId,
+                assignError: '',
                 setTab(t) {
                     this.tab = t;
                     try { localStorage.setItem('ayyanet_ticket_queue_tab', t); } catch (e) {}
@@ -514,6 +519,7 @@
                             : 'border-dashed border-[var(--amber-text-50)] bg-[var(--amber-text-06)] text-[var(--amber-text)] fx-unassigned-pulse');
                     };
                     chip(newId !== null);
+                    this.assignError = '';
 
                     try {
                         const res = await fetch(config.assignUrl + '/' + ticketId + '/assignee', {
@@ -522,22 +528,33 @@
                                 'Content-Type': 'application/json',
                                 'Accept': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'X-Requested-With': 'XMLHttpRequest',
                             },
                             body: JSON.stringify({ assigned_to: newId }),
                         });
-                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        if (!res.ok) {
+                            // 422 (validation) and 403 (policy) come back as JSON with a message.
+                            const data = await res.json().catch(() => ({}));
+                            const fieldError = data.errors ? Object.values(data.errors).flat()[0] : '';
+                            throw new Error(fieldError || data.message || 'Gagal mengubah penanggung jawab.');
+                        }
 
                         selectEl.dataset.currentAssignee = newId ?? '';
                         if (rowData) {
                             rowData.rowTabKey = newId === null ? 'unassigned' : (newId === this.currentUserId ? 'mine' : 'all');
                         }
-                        if (oldId === null && newId !== null) this.unassignedCount = Math.max(0, this.unassignedCount - 1);
-                        if (oldId !== null && newId === null) this.unassignedCount++;
-                        if (oldId === this.currentUserId && newId !== this.currentUserId) this.mineCount = Math.max(0, this.mineCount - 1);
-                        if (oldId !== this.currentUserId && newId === this.currentUserId) this.mineCount++;
+                        // The counters only cover open tickets.
+                        const isOpen = !rowData || !['Solved', 'Closed'].includes(rowData.rowStatus);
+                        if (isOpen) {
+                            if (oldId === null && newId !== null) this.unassignedCount = Math.max(0, this.unassignedCount - 1);
+                            if (oldId !== null && newId === null) this.unassignedCount++;
+                            if (oldId === this.currentUserId && newId !== this.currentUserId) this.mineCount = Math.max(0, this.mineCount - 1);
+                            if (oldId !== this.currentUserId && newId === this.currentUserId) this.mineCount++;
+                        }
                     } catch (e) {
                         selectEl.value = oldId ?? '';
                         chip(oldId !== null);
+                        this.assignError = (e && e.message && !e.message.startsWith('Failed')) ? e.message : 'Gagal mengubah penanggung jawab.';
                     }
                 },
             };
@@ -621,6 +638,7 @@
                 canReply: false,
                 canInternal: false,
                 sending: false,
+                sendError: '',
 
                 toggle() {
                     if (this.open) {
@@ -655,6 +673,7 @@
                 async sendMessage() {
                     if (!this.newMessage.trim() || this.sending) return;
                     this.sending = true;
+                    this.sendError = '';
                     try {
                         const res = await fetch(@js(url('tickets')) + '/' + this.ticketId + '/quick-message', {
                             method: 'POST',
@@ -666,14 +685,18 @@
                             },
                             body: JSON.stringify({ message: this.newMessage, is_internal: this.isInternal ? 1 : 0 }),
                         });
-                        const data = await res.json();
+                        const data = await res.json().catch(() => ({}));
                         if (res.ok && data.success && data.message) {
                             this.messages.push(data.message);
                             this.newMessage = '';
                             this.scrollToBottom();
+                        } else {
+                            // 422: first field error (e.g. message too long); 403/419: the server message.
+                            const fieldError = data.errors ? Object.values(data.errors).flat()[0] : '';
+                            this.sendError = fieldError || (typeof data.message === 'string' ? data.message : '') || 'Pesan gagal dikirim.';
                         }
                     } catch (e) {
-                        console.error('Failed to send message:', e);
+                        this.sendError = 'Pesan gagal dikirim.';
                     } finally {
                         this.sending = false;
                     }

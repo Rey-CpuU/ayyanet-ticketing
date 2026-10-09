@@ -62,7 +62,7 @@
                     </div>
                     <div class="flex justify-between gap-3 px-5 py-3">
                         <dt class="text-[var(--muted)]">Terdaftar</dt>
-                        <dd class="font-mono text-[var(--foreground)]">{{ $customer->created_at?->format('d M Y') ?? '—' }}</dd>
+                        <dd class="font-mono text-[var(--foreground)]">{{ $customer->created_at?->inDisplayTz()->format('d M Y') ?? '—' }}</dd>
                     </div>
                 </dl>
                 @if ($customer->address)
@@ -81,7 +81,7 @@
                             <div class="min-w-0 flex-1">
                                 <span class="font-mono text-[11px] font-medium text-[var(--accent)]">{{ $ticket->ticket_number }}</span>
                                 <span class="ticket-title-link mt-0.5 block truncate text-[13px] font-medium text-[var(--foreground)]">{{ $ticket->title }}</span>
-                                <span class="mt-0.5 block text-[11px] text-[var(--muted)]">{{ $ticket->assignee->name ?? 'Unassigned' }} · {{ $ticket->created_at?->format('d M Y') }}</span>
+                                <span class="mt-0.5 block text-[11px] text-[var(--muted)]">{{ $ticket->assignee->name ?? 'Unassigned' }} · {{ $ticket->created_at?->inDisplayTz()->format('d M Y') }}</span>
                             </div>
                             <div class="flex shrink-0 items-center gap-2.5">
                                 <x-ticket-priority :priority="$ticket->priority" />

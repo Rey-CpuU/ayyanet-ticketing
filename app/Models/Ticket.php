@@ -55,9 +55,12 @@ class Ticket extends Model
         'last_visited_at',
     ];
 
+    /**
+     * Includes soft-deleted customers, so tickets never lose their customer (views mark it "(dihapus)").
+     */
     public function customer()
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Customer::class)->withTrashed();
     }
 
     public function creator()
@@ -70,9 +73,12 @@ class Ticket extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    /**
+     * Conversation in chronological order (id breaks ties between messages from the same second).
+     */
     public function messages()
     {
-        return $this->hasMany(TicketMessage::class);
+        return $this->hasMany(TicketMessage::class)->oldest()->oldest('id');
     }
 
     public function auditLogs()

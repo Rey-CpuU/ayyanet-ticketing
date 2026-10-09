@@ -68,6 +68,14 @@ return [
     'timezone' => env('APP_TIMEZONE', 'UTC'),
 
     /*
+    | Timezone used for everything shown to people (views, exports, emails, notifications)
+    | and for reading datetime inputs. Storage and SLA math stay in the timezone above.
+    | See App\Support\DisplayTime.
+    */
+
+    'display_timezone' => env('APP_DISPLAY_TIMEZONE', 'Asia/Jakarta'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
