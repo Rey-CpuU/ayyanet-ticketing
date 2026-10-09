@@ -22,7 +22,7 @@
                 </div>
             </div>
 
-            <div class="card border-[var(--red-text-20)] p-6 sm:p-8">
+            <div class="card p-6 sm:p-8">
                 <div class="max-w-xl">
                     @include('profile.partials.delete-user-form')
                 </div>

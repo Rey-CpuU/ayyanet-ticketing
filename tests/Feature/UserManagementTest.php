@@ -35,7 +35,7 @@ test('admin invites a user by email instead of creating the account directly', f
 
     Mail::assertSent(UserInvitation::class, function (UserInvitation $mail) {
         return $mail->hasTo('sari@example.com')
-            && str_contains($mail->inviteUrl, '/register/invite/'.$mail->invitation->token);
+            && $mail->inviteUrl() === route('register.invite', $mail->invitation->token);
     });
 });
 
@@ -134,10 +134,19 @@ test('admin can edit a user role', function () {
     expect($this->cs->fresh()->role)->toBe('lapangan');
 });
 
-test('admin cannot delete own account', function () {
+test('admin cannot deactivate own account', function () {
     $this->actingAs($this->admin)->from('/users')
-        ->delete("/users/{$this->admin->id}")
-        ->assertRedirect('/users');
+        ->patch("/users/{$this->admin->id}/deactivate")
+        ->assertRedirect('/users')
+        ->assertSessionHas('error', 'Anda tidak dapat menonaktifkan akun Anda sendiri.');
 
-    expect(User::find($this->admin->id))->not->toBeNull();
+    expect($this->admin->fresh()->deactivated_at)->toBeNull();
+});
+
+test('users cannot be hard deleted', function () {
+    $this->actingAs($this->admin)
+        ->delete("/users/{$this->cs->id}")
+        ->assertMethodNotAllowed();
+
+    expect(User::find($this->cs->id))->not->toBeNull();
 });

@@ -252,8 +252,9 @@ class TicketWorkflow
 
         $this->log($ticket, 'sla_breached', null, Ticket::SLA_ACTIVE, $ticket->sla_deadline?->format('d M Y, H:i'));
 
-        $recipients = User::where('role', 'admin')
-            ->when($ticket->assigned_to, fn ($query) => $query->orWhere('id', $ticket->assigned_to))
+        $recipients = User::active()
+            ->where(fn ($query) => $query->where('role', 'admin')
+                ->when($ticket->assigned_to, fn ($query) => $query->orWhere('id', $ticket->assigned_to)))
             ->get();
 
         Notification::send($recipients, new TicketSlaBreached($ticket));

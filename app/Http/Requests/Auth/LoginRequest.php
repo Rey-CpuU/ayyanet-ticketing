@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -12,12 +13,29 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
+    public const MAX_ATTEMPTS = 5;
+
+    /**
+     * Throttle window in seconds; also the minimum gap between two lockout alert emails.
+     */
+    public const DECAY_SECONDS = 60;
+
+    public const DEACTIVATED_MESSAGE = 'Akun Anda telah dinonaktifkan. Hubungi admin untuk mengaktifkannya kembali.';
+
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * Emails are stored lowercase, so sign-in is case-insensitive.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge(['email' => User::normalizeEmail($this->input('email'))]);
     }
 
     /**
@@ -42,11 +60,24 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+        // The callback only runs once the password is verified, so the "deactivated" message is
+        // never shown for a wrong password.
+        $deactivated = false;
+        $authenticated = Auth::attemptWhen(
+            $this->only('email', 'password'),
+            function (User $user) use (&$deactivated) {
+                $deactivated = $user->isDeactivated();
+
+                return ! $deactivated;
+            },
+            $this->boolean('remember'),
+        );
+
+        if (! $authenticated) {
+            RateLimiter::hit($this->throttleKey(), self::DECAY_SECONDS);
 
             throw ValidationException::withMessages([
-                'email' => 'Email atau kata sandi salah.',
+                'email' => $deactivated ? self::DEACTIVATED_MESSAGE : 'Email atau kata sandi salah.',
             ]);
         }
 
@@ -60,10 +91,11 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), self::MAX_ATTEMPTS)) {
             return;
         }
 
+        // Fired on every throttled attempt; SendLockoutAlert mails at most once per window.
         event(new Lockout($this));
 
         $seconds = RateLimiter::availableIn($this->throttleKey());

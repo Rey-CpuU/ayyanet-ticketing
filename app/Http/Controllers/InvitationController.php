@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\UserInvitation;
 use App\Models\Invitation;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
@@ -24,12 +22,23 @@ class InvitationController extends Controller
             return back()->with('error', 'Undangan sudah diterima.');
         }
 
+        // An account already exists for this address (possibly deactivated): never re-invite it.
+        $existing = User::whereRaw('LOWER(email) = ?', [User::normalizeEmail($invitation->email)])->first();
+
+        if ($existing) {
+            return back()->with('error', $existing->isDeactivated()
+                ? 'Akun dengan email ini sudah ada tetapi dinonaktifkan. Aktifkan kembali akun tersebut dari daftar pengguna.'
+                : 'Akun dengan email ini sudah terdaftar.');
+        }
+
         $invitation->update([
             'token' => Str::random(64),
-            'expires_at' => now()->addHours(24),
+            'expires_at' => now()->addHours(Invitation::EXPIRY_HOURS),
         ]);
 
-        Mail::to($invitation->email)->send(new UserInvitation($invitation));
+        if (! $invitation->sendMail()) {
+            return back()->with('error', 'Email undangan gagal dikirim. Silakan coba lagi beberapa saat lagi.');
+        }
 
         return back()->with('success', 'Undangan dikirim ulang ke alamat email yang terdaftar.');
     }
@@ -58,14 +67,14 @@ class InvitationController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
-        if (User::where('email', $invitation->email)->exists()) {
+        if (User::emailTaken($invitation->email)) {
             return back()->withErrors(['token' => 'Akun dengan email ini sudah terdaftar. Silakan masuk.']);
         }
 
         DB::transaction(function () use ($request, $invitation) {
             $user = User::create([
                 'name' => $request->name,
-                'email' => $invitation->email,
+                'email' => User::normalizeEmail($invitation->email),
                 'role' => $invitation->role,
                 'password' => Hash::make($request->password),
             ]);

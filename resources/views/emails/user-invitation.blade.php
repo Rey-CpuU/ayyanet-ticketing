@@ -9,7 +9,7 @@ Untuk melengkapi pendaftaran dan membuat password akun Anda, silakan klik tombol
 Buat Akun Anda
 </x-mail::button>
 
-*Link undangan ini hanya berlaku selama 5 jam sejak dikirimkan.*
+*Link undangan ini hanya berlaku selama {{ $expiryHours }} jam sejak dikirimkan.*
 
 Jika tombol di atas tidak berfungsi, salin dan tempel URL berikut ke browser Anda:
 {{ $inviteUrl }}

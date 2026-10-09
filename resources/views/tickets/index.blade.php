@@ -58,7 +58,7 @@
                         :options="['' => 'Semua Kategori'] + $categories->mapWithKeys(fn ($c) => [$c => $c])->all()" />
 
                     <x-custom-select name="assigned_to" :value="$filters['assigned_to']" placeholder="Semua Penanggung Jawab" width="w-48"
-                        :options="['' => 'Semua Penanggung Jawab', 'unassigned' => 'Unassigned'] + $assignees->mapWithKeys(fn ($a) => [(string) $a->id => $a->name])->all()" />
+                        :options="['' => 'Semua Penanggung Jawab', 'unassigned' => 'Unassigned'] + $assignees->mapWithKeys(fn ($a) => [(string) $a->id => $a->deactivated_at ? $a->name.' (nonaktif)' : $a->name])->all()" />
 
                     @if (auth()->user()->isAdmin())
                         <x-custom-select name="trashed" :value="$filters['trashed']" placeholder="Tiket aktif" width="w-44"

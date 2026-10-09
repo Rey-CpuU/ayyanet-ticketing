@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
@@ -38,23 +37,12 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's account.
+     * Self-service account deletion is disabled: staff accounts are referenced by ticket history,
+     * so an admin deactivates them from user management instead.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(): RedirectResponse
     {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
-        ]);
-
-        $user = $request->user();
-
-        Auth::logout();
-
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return Redirect::to('/');
+        return Redirect::route('profile.edit')
+            ->with('error', 'Akun tidak dapat dihapus sendiri. Hubungi admin untuk menonaktifkan akun Anda.');
     }
 }
