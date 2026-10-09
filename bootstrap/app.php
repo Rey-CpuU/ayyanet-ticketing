@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Providers\AuthServiceProvider;
@@ -20,7 +19,6 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => RoleMiddleware::class,
-            'admin' => EnsureUserIsAdmin::class,
         ]);
 
         // The app runs behind a TLS-terminating proxy (Render/Koyeb/Vercel);

@@ -44,29 +44,23 @@
     --card-3d-shadow-hover: rgba(59, 130, 246, 0.3);
     --aurora-a: rgba(59, 130, 246, 0.25);
     --aurora-b: rgba(64, 64, 64, 0.15);
-    --select-option-bg: #ffffff;
-    --select-option-fg: #171717;
     --scroll-thumb: rgba(64, 64, 64, 0.25);
 
     /* Semantic status colors */
     --red-text: #ef4444;
     --red-bright: #f87171;
     --red-solid: #ef4444;
-    --red-solid-hover: #dc2626;
     --red-glow: 0 0 10px rgba(239, 68, 68, 0.2);
     --amber-text: #f59e0b;
     --amber-glow: 0 0 10px rgba(245, 158, 11, 0.2);
     --blue-text: #3b82f6;         /* #3B82F6 */
     --blue-glow: 0 0 10px rgba(59, 130, 246, 0.2);
     --slate-text: #71717a;
-    --slate-glow: none;
     --green-text: #10b981;
     --orange-text: #f97316;
     --violet-text: #8b5cf6;
     --cyan-text: #06b6d4;
     --pink-text: #ec4899;
-    --amber-light-text: #d97706;
-    --orange-light-text: #ea580c;
 
     /* Status banner strip */
     --banner-outage-bg: rgba(239, 68, 68, 0.08);
@@ -155,15 +149,12 @@
     --card-3d-shadow-hover: rgba(254, 127, 45, 0.45);
     --aurora-a: rgba(254, 127, 45, 0.5);
     --aurora-b: rgba(35, 61, 77, 0.6);
-    --select-option-bg: #121c24;
-    --select-option-fg: #eaecf0;
     --scroll-thumb: rgba(35, 61, 77, 0.6);
 
     /* Semantic status colors */
     --red-text: #ef4444;
     --red-bright: #f87171;
     --red-solid: #ef4444;
-    --red-solid-hover: #dc2626;
     --red-glow: 0 0 14px rgba(239, 68, 68, 0.45);
     --amber-text: #fe7f2d;
     /* #FE7F2D */
@@ -171,14 +162,11 @@
     --blue-text: #5390ba;
     --blue-glow: 0 0 12px rgba(83, 144, 186, 0.35);
     --slate-text: #8b9ea9;
-    --slate-glow: none;
     --green-text: #4ade80;
     --orange-text: #fe7f2d;
     --violet-text: #a78bfa;
     --cyan-text: #22d3ee;
     --pink-text: #fca5a5;
-    --amber-light-text: #ffd5b8;
-    --orange-light-text: #ffbe94;
 
     /* Status banner strip */
     --banner-outage-bg: #241114;
@@ -236,16 +224,12 @@ body {
 }
 
 /* ---------- Scrollbars ---------- */
-.ticket-scroll::-webkit-scrollbar,
-.ticket-list::-webkit-scrollbar,
 .ticket-detail-scroll::-webkit-scrollbar,
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
-.ticket-scroll::-webkit-scrollbar-thumb,
-.ticket-list::-webkit-scrollbar-thumb,
 .ticket-detail-scroll::-webkit-scrollbar-thumb,
 ::-webkit-scrollbar-thumb {
     background: var(--scroll-thumb);
@@ -427,10 +411,6 @@ body {
     .badge-slate { background: color-mix(in srgb, var(--slate-text) 12%, transparent); color: var(--slate-text); }
     .badge-blue { background: color-mix(in srgb, var(--blue-text) 13%, transparent); color: var(--blue-text); }
     .badge-cyan { background: color-mix(in srgb, var(--cyan-text) 14%, transparent); color: var(--cyan-text); }
-
-    .badge-glow-red { box-shadow: var(--red-glow); }
-    .badge-glow-amber { box-shadow: var(--amber-glow); }
-    .badge-glow-blue { box-shadow: var(--blue-glow); }
 
     .priority-high { color: var(--amber-text); }
     .priority-medium { color: var(--blue-text); }
@@ -617,97 +597,6 @@ input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focu
     border-color: var(--accent) !important;
     box-shadow: 0 0 0 3px var(--accent-soft) !important;
     outline: none !important;
-}
-
-/* ==========================================================================
-   Animated SVG Border Dropdown Menu (Drawing Path & Shadow)
-   ========================================================================== */
-.svg-menu-dropdown {
-    position: relative;
-    border-radius: 12px;
-}
-
-.svg-menu-dropdown .svg-border-frame {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    overflow: visible;
-}
-
-.svg-menu-dropdown .border1 {
-    fill: var(--surface-2);
-    fill-opacity: 0;
-    stroke: var(--accent);
-    stroke-dasharray: 600 600;
-    stroke-dashoffset: -600px;
-    transition: stroke 400ms cubic-bezier(0.4, 0.0, 0.2, 1),
-                stroke-dasharray 400ms cubic-bezier(0.4, 0.0, 0.2, 1),
-                stroke-dashoffset 400ms cubic-bezier(0.4, 0.0, 0.2, 1),
-                fill-opacity 400ms 40ms cubic-bezier(0.4, 0.0, 0.2, 1);
-}
-
-.svg-menu-dropdown .border2 {
-    fill: var(--surface-2);
-    fill-opacity: 0;
-    stroke: var(--accent);
-    stroke-dasharray: 0 600;
-    stroke-dashoffset: 0;
-    transition: stroke 400ms cubic-bezier(0.4, 0.0, 0.2, 1),
-                stroke-dasharray 400ms cubic-bezier(0.4, 0.0, 0.2, 1),
-                stroke-dashoffset 400ms cubic-bezier(0.4, 0.0, 0.2, 1),
-                fill-opacity 400ms 40ms cubic-bezier(0.4, 0.0, 0.2, 1);
-}
-
-.svg-menu-dropdown.is-expanded .border1 {
-    fill-opacity: 1;
-    stroke: var(--border-strong);
-    stroke-dasharray: 600 600;
-    stroke-dashoffset: 0;
-}
-
-.svg-menu-dropdown.is-expanded .border2 {
-    fill-opacity: 1;
-    stroke: var(--border-strong);
-    stroke-dasharray: 600 600;
-    stroke-dashoffset: 0;
-}
-
-.svg-menu-dropdown .dropdown-contents-inner {
-    position: relative;
-    z-index: 10;
-    opacity: 0;
-    transform: translateY(4px);
-    transition: opacity 350ms 80ms cubic-bezier(0.4, 0, 0.2, 1),
-                transform 350ms 80ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.svg-menu-dropdown.is-expanded .dropdown-contents-inner {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.svg-dropdown-row {
-    align-items: center;
-    border-bottom: 1px solid var(--border-60);
-    cursor: pointer;
-    display: flex;
-    padding: 9px 14px;
-    font-size: 13.5px;
-    font-weight: 500;
-    color: var(--foreground);
-    transition: all 0.2s ease;
-}
-
-.svg-dropdown-row:last-child {
-    border-bottom: none;
-}
-
-.svg-dropdown-row:hover {
-    background-color: var(--hover-overlay);
-    color: var(--accent);
-    padding-left: 17px;
 }
 
 /* Pulse ring for ownerless tickets — draws the eye to unplaced work. */

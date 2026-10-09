@@ -1,16 +1,11 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
 // Flag overdue tickets and notify the assignee + admins. Requires `php artisan schedule:run` via cron.
 Schedule::command('tickets:check-sla')->everyFiveMinutes()->withoutOverlapping();
-
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
 
 // Public registration is closed, so the first admin has to be promoted from the CLI.
 Artisan::command('user:make-admin {email}', function (string $email) {
