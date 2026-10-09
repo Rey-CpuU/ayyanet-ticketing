@@ -158,3 +158,68 @@ test('force deleting a ticket deletes its attachment file', function () {
     Storage::disk('public')->assertMissing('attachments/lama-publik.pdf');
     expect(Ticket::withTrashed()->count())->toBe(0);
 });
+
+test('the create form renders the attachment dropzone with the allowed types', function () {
+    $this->actingAs($this->cs)->get('/tickets/create')
+        ->assertOk()
+        ->assertSee('data-dropzone', false)
+        ->assertSee('x-data="fileDropzone(', false)
+        ->assertSee('type="file"', false)
+        ->assertSee('name="attachment"', false)
+        ->assertSee('accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.txt"', false)
+        ->assertSee('Seret &amp; lepas file di sini', false)
+        ->assertSee('Maks. 5 MB: jpg, jpeg, png, pdf, doc, docx, xls, xlsx, txt.')
+        ->assertSee('aria-live="polite"', false)
+        ->assertDontSee('data-dropzone-current', false);
+});
+
+test('the edit form renders the dropzone with the current attachment and a download link', function () {
+    Storage::disk('local')->put('attachments/bukti.pdf', 'pdf');
+    $ticket = ticketWithAttachment($this->customer->id, $this->cs->id, 'attachments/bukti.pdf');
+
+    $this->actingAs($this->cs)->get("/tickets/{$ticket->id}/edit")
+        ->assertOk()
+        ->assertSee('data-dropzone', false)
+        ->assertSee('accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.txt"', false)
+        ->assertSee('data-dropzone-current', false)
+        ->assertSee('File saat ini')
+        ->assertSee('bukti.pdf')
+        ->assertSee('href="'.route('tickets.attachment', $ticket).'"', false)
+        ->assertSee('Ganti file');
+});
+
+test('the edit form dropzone omits the current file block when there is no attachment', function () {
+    $ticket = ticketWithAttachment($this->customer->id, $this->cs->id, 'attachments/tidak-ada.pdf');
+    $ticket->update(['attachment_path' => null]);
+
+    $this->actingAs($this->cs)->get("/tickets/{$ticket->id}/edit")
+        ->assertOk()
+        ->assertSee('data-dropzone', false)
+        ->assertDontSee('data-dropzone-current', false);
+});
+
+test('server validation errors are shown inside the dropzone after a rejected upload', function () {
+    $this->actingAs($this->cs)
+        ->from('/tickets/create')
+        ->followingRedirects()
+        ->post('/tickets', attachmentTicketPayload($this->customer->id, [
+            'attachment' => UploadedFile::fake()->create('virus.exe', 10, 'application/x-msdownload'),
+        ]))
+        ->assertOk()
+        ->assertSee('Lampiran harus berupa file: jpg, jpeg, png, pdf, doc, docx, xls, xlsx, txt.')
+        ->assertSee('is-invalid', false);
+
+    expect(Ticket::count())->toBe(0);
+});
+
+test('an image uploaded through the normal multipart form is stored privately', function () {
+    $this->actingAs($this->cs)
+        ->post('/tickets', attachmentTicketPayload($this->customer->id, [
+            'attachment' => UploadedFile::fake()->image('foto-modem.png', 320, 240),
+        ]))
+        ->assertRedirect();
+
+    $ticket = Ticket::firstOrFail();
+    expect($ticket->attachment_path)->toStartWith('attachments/')->toEndWith('.png');
+    Storage::disk('local')->assertExists($ticket->attachment_path);
+});

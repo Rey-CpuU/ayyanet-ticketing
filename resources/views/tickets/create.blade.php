@@ -98,13 +98,7 @@
                     <x-input-error :messages="$errors->get('location')" class="mt-1.5" />
                 </div>
 
-                <div class="sm:col-span-2">
-                    <label for="attachment" class="label">Lampiran</label>
-                    <input type="file" name="attachment" id="attachment" accept=".{{ implode(',.', App\Models\Ticket::ATTACHMENT_MIMES) }}"
-                        class="input file:mr-3 file:rounded-md file:border-0 file:bg-[var(--surface-3)] file:px-3 file:py-1 file:text-[12px] file:font-semibold file:text-[var(--foreground)]">
-                    <p class="mt-1 text-[11.5px] text-[var(--muted)]">Maks. 5 MB: {{ implode(', ', App\Models\Ticket::ATTACHMENT_MIMES) }}.</p>
-                    <x-input-error :messages="$errors->get('attachment')" class="mt-1.5" />
-                </div>
+                <x-file-dropzone name="attachment" class="sm:col-span-2" />
             </div>
 
             <div class="flex items-center justify-end gap-3 border-t border-[var(--border)] pt-5">
