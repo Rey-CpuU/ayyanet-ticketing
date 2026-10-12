@@ -5,10 +5,14 @@ namespace App\Http\Requests;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class ProfileUpdateRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge(['email' => User::normalizeEmail($this->input('email'))]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -24,7 +28,7 @@ class ProfileUpdateRequest extends FormRequest
                 'lowercase',
                 'email',
                 'max:255',
-                Rule::unique(User::class)->ignore($this->user()->id),
+                User::uniqueEmailRule($this->user()->id),
             ],
         ];
     }

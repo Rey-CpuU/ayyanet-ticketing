@@ -9,21 +9,23 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Sent synchronously (see Invitation::sendMail): the link contains a sign-up token.
+ */
 class UserInvitation extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public string $inviteUrl;
-
     public function __construct(
         public Invitation $invitation,
-    ) {
-        $baseUrl = env('APP_URL', 'https://ayyanet-ticketing.vercel.app');
-        if ($baseUrl === 'http://localhost') {
-            $baseUrl = 'https://ayyanet-ticketing.vercel.app';
-        }
+    ) {}
 
-        $this->inviteUrl = rtrim($baseUrl, '/') . "/register/invite/{$invitation->token}";
+    /**
+     * Absolute sign-up link, built from the named route so it follows the configured app URL.
+     */
+    public function inviteUrl(): string
+    {
+        return route('register.invite', $this->invitation->token);
     }
 
     public function envelope(): Envelope
@@ -38,7 +40,8 @@ class UserInvitation extends Mailable
         return new Content(
             markdown: 'emails.user-invitation',
             with: [
-                'inviteUrl' => $this->inviteUrl,
+                'inviteUrl' => $this->inviteUrl(),
+                'expiryHours' => Invitation::EXPIRY_HOURS,
             ],
         );
     }

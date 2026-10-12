@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Providers\AuthServiceProvider;
@@ -17,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SecurityHeadersMiddleware::class);
 
+        // Rejects sessions of accounts deactivated after they signed in.
+        $middleware->web(append: [EnsureUserIsActive::class]);
+
         $middleware->alias([
             'role' => RoleMiddleware::class,
         ]);
@@ -26,8 +30,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // fetch()/XHR callers (Accept: application/json) get 422/403/... as JSON instead of a
+        // redirect or an HTML error page.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })
     ->withProviders([

@@ -55,13 +55,13 @@
 
                 <div>
                     <label for="starts_at" class="label">Starts at <span class="text-[var(--muted-strong)]">(optional)</span></label>
-                    <input type="datetime-local" name="starts_at" id="starts_at" value="{{ old('starts_at', $statusBanner->starts_at?->format('Y-m-d\TH:i')) }}" class="input">
+                    <input type="datetime-local" name="starts_at" id="starts_at" value="{{ old('starts_at', \App\Support\DisplayTime::toInput($statusBanner->starts_at)) }}" class="input">
                     <x-input-error :messages="$errors->get('starts_at')" class="mt-1.5" />
                 </div>
 
                 <div>
                     <label for="ends_at" class="label">Ends at <span class="text-[var(--muted-strong)]">(optional)</span></label>
-                    <input type="datetime-local" name="ends_at" id="ends_at" value="{{ old('ends_at', $statusBanner->ends_at?->format('Y-m-d\TH:i')) }}" class="input">
+                    <input type="datetime-local" name="ends_at" id="ends_at" value="{{ old('ends_at', \App\Support\DisplayTime::toInput($statusBanner->ends_at)) }}" class="input">
                     <x-input-error :messages="$errors->get('ends_at')" class="mt-1.5" />
                 </div>
             </div>

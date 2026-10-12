@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Database\Connectors\NeonPostgresConnector;
+use App\Support\DisplayTime;
+use Carbon\Carbon;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -24,6 +26,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // $date->inDisplayTz(): a copy converted to the display timezone (see App\Support\DisplayTime).
+        Carbon::macro('inDisplayTz', function () {
+            /** @var Carbon $this */
+            return $this->copy()->setTimezone(DisplayTime::zone());
+        });
+
         RateLimiter::for('ticket-writes', fn (Request $request) => Limit::perMinute(20)
             ->by($request->user()?->id ?: $request->ip()));
 

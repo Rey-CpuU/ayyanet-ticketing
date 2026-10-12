@@ -15,8 +15,14 @@ class TicketAssignmentController extends Controller
         $this->authorize('assign', $ticket);
 
         $validated = $request->validate([
-            // Only staff accounts can be responsible for a ticket.
-            'assigned_to' => ['nullable', 'integer', Rule::exists('users', 'id')->whereIn('role', User::ROLES)],
+            // Only active staff accounts can be responsible for a ticket.
+            'assigned_to' => [
+                'nullable',
+                'integer',
+                Rule::exists('users', 'id')->whereIn('role', User::ROLES)->whereNull('deactivated_at'),
+            ],
+        ], [
+            'assigned_to.exists' => 'Penanggung jawab tidak valid atau akunnya sudah dinonaktifkan.',
         ]);
 
         $assignee = isset($validated['assigned_to']) ? User::findOrFail($validated['assigned_to']) : null;

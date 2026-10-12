@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\StatusBanner;
+use App\Support\DisplayTime;
 use Illuminate\Http\Request;
 
 class StatusBannerController extends Controller
@@ -61,13 +62,22 @@ class StatusBannerController extends Controller
 
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string'],
             'type' => ['required', 'in:info,maintenance,outage,warning'],
             'is_active' => ['sometimes', 'boolean'],
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
-        ]) + ['is_active' => $request->boolean('is_active')];
+        ]);
+
+        // The datetime-local inputs are wall-clock times in the display timezone; store them in UTC.
+        foreach (['starts_at', 'ends_at'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = DisplayTime::parseInput($data[$field]);
+            }
+        }
+
+        return ['is_active' => $request->boolean('is_active')] + $data;
     }
 }

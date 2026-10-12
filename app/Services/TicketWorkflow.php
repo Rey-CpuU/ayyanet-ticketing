@@ -7,6 +7,7 @@ use App\Models\Ticket;
 use App\Models\TicketActivity;
 use App\Models\User;
 use App\Notifications\TicketSlaBreached;
+use App\Support\DisplayTime;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -202,6 +203,8 @@ class TicketWorkflow
         });
 
         $this->notifier->statusChanged($ticket, $from->value, $to->value, $actor);
+        // The customer is only emailed about real status changes (edit form and PATCH /status alike).
+        $this->notifier->customerUpdate($ticket, 'Status ticket diperbarui ke '.$to->value);
     }
 
     /**
@@ -250,10 +253,12 @@ class TicketWorkflow
         $ticket->sla_status = Ticket::SLA_BREACHED;
         $ticket->syncOriginalAttribute('sla_status');
 
-        $this->log($ticket, 'sla_breached', null, Ticket::SLA_ACTIVE, $ticket->sla_deadline?->format('d M Y, H:i'));
+        // Stored as display text, so it is written in the display timezone.
+        $this->log($ticket, 'sla_breached', null, Ticket::SLA_ACTIVE, DisplayTime::format($ticket->sla_deadline, 'd M Y, H:i') ?: null);
 
-        $recipients = User::where('role', 'admin')
-            ->when($ticket->assigned_to, fn ($query) => $query->orWhere('id', $ticket->assigned_to))
+        $recipients = User::active()
+            ->where(fn ($query) => $query->where('role', 'admin')
+                ->when($ticket->assigned_to, fn ($query) => $query->orWhere('id', $ticket->assigned_to)))
             ->get();
 
         Notification::send($recipients, new TicketSlaBreached($ticket));

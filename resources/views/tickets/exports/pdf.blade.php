@@ -71,7 +71,7 @@
                     <td><span class="badge status-{{ Str::slug(strtolower($ticket->status)) }}">{{ $ticket->status }}</span></td>
                     <td>{{ $ticket->priority }}</td>
                     <td>{{ $ticket->category }}</td>
-                    <td>{{ $ticket->created_at?->format('d M Y') ?? '-' }}</td>
+                    <td>{{ $ticket->created_at?->inDisplayTz()->format('d M Y') ?? '-' }}</td>
                 </tr>
             @endforeach
         </tbody>

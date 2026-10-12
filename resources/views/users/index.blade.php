@@ -28,7 +28,7 @@
 
         <div class="card overflow-hidden mb-8">
             <div class="border-b border-[var(--border)] bg-[var(--surface)] px-5 py-3.5">
-                <h3 class="text-[14px] font-bold text-[var(--foreground)]">Active Users</h3>
+                <h3 class="text-[14px] font-bold text-[var(--foreground)]">Users</h3>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[760px] text-left">
@@ -67,6 +67,9 @@
                                                 @if ($user->id === auth()->id())
                                                     <span class="text-[11px] font-medium text-[var(--muted)]">(you)</span>
                                                 @endif
+                                                @if ($user->isDeactivated())
+                                                    <span class="badge badge-slate ml-1" title="Dinonaktifkan {{ $user->deactivated_at->inDisplayTz()->format('d M Y') }}">Nonaktif</span>
+                                                @endif
                                             </div>
                                             <div class="font-mono text-[11.5px] text-[var(--muted)]">{{ $user->email }}</div>
                                         </div>
@@ -76,15 +79,21 @@
                                     <span class="badge" style="background: {{ $roleStyle['bg'] }}; color: {{ $roleStyle['text'] }};">{{ $roleLabel }}</span>
                                 </td>
                                 <td class="px-5 py-4 font-mono text-[12px] text-[var(--muted)]">{{ $user->created_tickets_count }}</td>
-                                <td class="px-5 py-4 font-mono text-[11.5px] text-[var(--muted)]">{{ $user->created_at->format('d M Y') }}</td>
+                                <td class="px-5 py-4 font-mono text-[11.5px] text-[var(--muted)]">{{ $user->created_at->inDisplayTz()->format('d M Y') }}</td>
                                 <td class="px-5 py-4">
                                     <div class="flex items-center gap-2">
                                         <a href="{{ route('users.edit', $user) }}" class="btn-secondary !px-3 !py-1.5 text-xs">Edit</a>
-                                        @if ($user->id !== auth()->id())
-                                            <form method="POST" action="{{ route('users.destroy', $user) }}" onsubmit="return confirm({{ Js::from('Hapus akun '.$user->name.'?') }})">
+                                        @if ($user->isDeactivated())
+                                            <form method="POST" action="{{ route('users.reactivate', $user) }}">
                                                 @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn-danger !px-3 !py-1.5 text-xs">Delete</button>
+                                                @method('PATCH')
+                                                <button type="submit" class="btn-secondary !px-3 !py-1.5 text-xs">Aktifkan kembali</button>
+                                            </form>
+                                        @elseif ($user->id !== auth()->id())
+                                            <form method="POST" action="{{ route('users.deactivate', $user) }}" onsubmit="return confirm({{ Js::from('Nonaktifkan akun '.$user->name.'? Akun tidak bisa masuk lagi, tetapi riwayat tiketnya tetap tersimpan.') }})">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="btn-danger !px-3 !py-1.5 text-xs">Nonaktifkan</button>
                                             </form>
                                         @endif
                                     </div>

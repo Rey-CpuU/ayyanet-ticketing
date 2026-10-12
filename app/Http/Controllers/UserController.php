@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\UserInvitation;
 use App\Models\Invitation;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -14,7 +12,11 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::withCount('createdTickets')->latest()->get();
+        // Active accounts first; deactivated ones stay listed so they can be reactivated.
+        $users = User::withCount('createdTickets')
+            ->orderByRaw('deactivated_at IS NOT NULL')
+            ->latest()
+            ->get();
         $invitations = Invitation::whereNull('accepted_at')->latest()->get();
 
         return view('users.index', compact('users', 'invitations'));
@@ -31,8 +33,10 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        $request->merge(['email' => User::normalizeEmail($request->input('email'))]);
+
         $data = $request->validate([
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', User::uniqueEmailRule()],
             'role' => ['required', Rule::in(User::ROLES)],
         ]);
 
@@ -42,13 +46,16 @@ class UserController extends Controller
             [
                 'role' => $data['role'],
                 'token' => Str::random(64),
-                'expires_at' => now()->addHours(24),
+                'expires_at' => now()->addHours(Invitation::EXPIRY_HOURS),
                 'accepted_at' => null,
                 'created_by' => $request->user()->id,
             ],
         );
 
-        Mail::to($invitation->email)->send(new UserInvitation($invitation));
+        if (! $invitation->sendMail()) {
+            return redirect()->route('users.index')
+                ->with('error', "Undangan untuk {$invitation->email} sudah dibuat, tetapi email gagal dikirim. Silakan coba kirim ulang beberapa saat lagi.");
+        }
 
         return redirect()->route('users.index')
             ->with('success', "Undangan dikirim ke {$invitation->email}.");
@@ -61,9 +68,11 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        $request->merge(['email' => User::normalizeEmail($request->input('email'))]);
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'email' => ['required', 'email', 'max:255', User::uniqueEmailRule($user->id)],
             'role' => ['required', Rule::in(User::ROLES)],
         ]);
 
@@ -77,15 +86,39 @@ class UserController extends Controller
             ->with('success', 'Akun berhasil diperbarui.');
     }
 
-    public function destroy(Request $request, User $user)
+    /**
+     * Accounts are never deleted (tickets, messages and activities keep referring to them);
+     * a deactivated account can no longer sign in and is hidden from assignee pickers.
+     */
+    public function deactivate(Request $request, User $user)
     {
-        if ($user->id === $request->user()->id) {
-            return back()->with('error', 'Tidak bisa menghapus akun sendiri.');
+        if ($user->isDeactivated()) {
+            return back()->with('error', "Akun {$user->name} sudah nonaktif.");
         }
 
-        $user->delete();
+        if ($error = User::deactivationError($request->user(), $user)) {
+            return back()->with('error', $error);
+        }
+
+        $user->forceFill([
+            'deactivated_at' => now(),
+            // Invalidate "remember me" cookies; open sessions are rejected by EnsureUserIsActive.
+            'remember_token' => null,
+        ])->save();
 
         return redirect()->route('users.index')
-            ->with('success', 'Akun dihapus.');
+            ->with('success', "Akun {$user->name} dinonaktifkan.");
+    }
+
+    public function reactivate(User $user)
+    {
+        if ($user->isActive()) {
+            return back()->with('error', "Akun {$user->name} sudah aktif.");
+        }
+
+        $user->forceFill(['deactivated_at' => null])->save();
+
+        return redirect()->route('users.index')
+            ->with('success', "Akun {$user->name} diaktifkan kembali.");
     }
 }
